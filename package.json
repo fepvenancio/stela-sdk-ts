@@ -1,5 +1,12 @@
 {
-  "name": "stela-sdk",
+  "name": "@fepvenancio/stela-sdk",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fepvenancio/stela-sdk-ts.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "version": "0.1.0",
   "description": "TypeScript SDK for the Stela P2P lending protocol on StarkNet",
   "type": "module",
