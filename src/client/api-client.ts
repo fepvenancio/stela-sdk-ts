@@ -53,17 +53,20 @@ export class ApiClient {
 
   /** Get treasury asset balances for an address */
   async getTreasuryView(address: string): Promise<ApiListResponse<TreasuryAsset>> {
-    return this.get<ApiListResponse<TreasuryAsset>>(`/treasury?address=${address}`)
+    const query = new URLSearchParams({ address })
+    return this.get<ApiListResponse<TreasuryAsset>>(`/treasury?${query}`)
   }
 
   /** Get locker info for inscriptions of an address */
   async getLockers(address: string): Promise<ApiListResponse<LockerInfo>> {
-    return this.get<ApiListResponse<LockerInfo>>(`/lockers?address=${address}`)
+    const query = new URLSearchParams({ address })
+    return this.get<ApiListResponse<LockerInfo>>(`/lockers?${query}`)
   }
 
   /** Get share balances for an address */
   async getShareBalances(address: string): Promise<ApiListResponse<ShareBalance>> {
-    return this.get<ApiListResponse<ShareBalance>>(`/shares?address=${address}`)
+    const query = new URLSearchParams({ address })
+    return this.get<ApiListResponse<ShareBalance>>(`/shares?${query}`)
   }
 
   private async get<T>(path: string): Promise<T> {
