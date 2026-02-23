@@ -1,4 +1,4 @@
-import { Contract, RpcProvider, Account, CallData, hash } from 'starknet'
+import { Contract, type RpcProvider, type Account, hash } from 'starknet'
 import type { Call } from '../types/common.js'
 import type { LockerState } from '../types/locker.js'
 import stelaAbi from '../abi/stela.json'
