@@ -26,6 +26,12 @@ export type {
   StelaEvent,
   LockerState,
   LockerCall,
+  SignedOrder,
+  SubmitOrderRequest,
+  TakerIntent,
+  OrderRecord,
+  MatchedOrder,
+  MatchResponse,
 } from './types/index.js'
 
 export { VALID_STATUSES, STATUS_LABELS } from './types/index.js'
@@ -74,6 +80,9 @@ export {
 export { SELECTORS } from './events/index.js'
 export { parseEvent, parseEvents } from './events/index.js'
 
+// ── Signing ──────────────────────────────────────────────────────────
+export { buildSignedOrderTypedData, signOrder } from './signing/sign-order.js'
+
 // ── Clients ──────────────────────────────────────────────────────────
 export {
   InscriptionClient,
@@ -81,6 +90,8 @@ export {
   LockerClient,
   ApiClient,
   ApiError,
+  MatchingClient,
+  MatchingEngineError,
   StelaSdk,
 } from './client/index.js'
 
@@ -90,5 +101,6 @@ export type {
   ApiClientOptions,
   ListInscriptionsParams,
   InscriptionEventRow,
+  MatchingClientOptions,
   StelaSdkOptions,
 } from './client/index.js'

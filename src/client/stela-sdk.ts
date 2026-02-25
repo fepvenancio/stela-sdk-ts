@@ -5,6 +5,7 @@ import { InscriptionClient } from './inscription-client.js'
 import { ShareClient } from './share-client.js'
 import { LockerClient } from './locker-client.js'
 import { ApiClient } from './api-client.js'
+import { MatchingClient } from './matching-client.js'
 import stelaAbi from '../abi/stela.json'
 
 export interface StelaSdkOptions {
@@ -18,6 +19,8 @@ export interface StelaSdkOptions {
   apiBaseUrl?: string
   /** Override the contract address (for custom deployments) */
   stelaAddress?: string
+  /** Matching engine base URL (optional — if omitted, sdk.matching is undefined) */
+  matchingEngineUrl?: string
 }
 
 /**
@@ -34,6 +37,7 @@ export class StelaSdk {
   readonly shares: ShareClient
   readonly locker: LockerClient
   readonly api: ApiClient
+  readonly matching?: MatchingClient
   readonly network: Network
   readonly stelaAddress: string
 
@@ -56,5 +60,9 @@ export class StelaSdk {
     this.locker = new LockerClient(stelaContract, opts.provider, opts.account)
 
     this.api = new ApiClient({ baseUrl: opts.apiBaseUrl })
+
+    if (opts.matchingEngineUrl) {
+      this.matching = new MatchingClient({ baseUrl: opts.matchingEngineUrl })
+    }
   }
 }
