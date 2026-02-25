@@ -1,6 +1,7 @@
 import { Contract, type RpcProvider, type Account } from 'starknet'
 import type { Call } from '../types/common.js'
 import type { Asset, InscriptionParams, StoredInscription } from '../types/inscription.js'
+import type { OrderRecord } from '../types/matching.js'
 import stelaAbi from '../abi/stela.json'
 import { toU256, fromU256 } from '../utils/u256.js'
 import { ASSET_TYPE_ENUM } from '../constants/protocol.js'
@@ -100,6 +101,33 @@ export class InscriptionClient {
       entrypoint: 'redeem',
       calldata: [...toU256(inscriptionId), ...toU256(shares)],
     }
+  }
+
+  /**
+   * Build a `fill_signed_order` call for a given order record.
+   * Calldata follows the Cairo `SignedOrder` struct field order exactly:
+   * maker, allowed_taker, inscription_id(u256), bps(u256), deadline,
+   * nonce, min_fill_bps(u256), signature([r,s]), fill_bps(u256).
+   */
+  buildFillSignedOrder(
+    order: OrderRecord,
+    signature: [string, string],
+    fillBps: bigint,
+  ): Call {
+    const calldata: string[] = [
+      order.maker,
+      order.allowed_taker,
+      ...toU256(BigInt(order.inscription_id)),
+      ...toU256(BigInt(order.bps)),
+      order.deadline.toString(),
+      order.nonce,
+      ...toU256(BigInt(order.min_fill_bps)),
+      '2',
+      signature[0],
+      signature[1],
+      ...toU256(fillBps),
+    ]
+    return { contractAddress: this.address, entrypoint: 'fill_signed_order', calldata }
   }
 
   // ── Execute Methods ────────────────────────────────────────────────
