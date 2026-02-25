@@ -43,3 +43,12 @@ export type {
   LockerState,
   LockerCall,
 } from './locker.js'
+
+export type {
+  SignedOrder,
+  SubmitOrderRequest,
+  TakerIntent,
+  OrderRecord,
+  MatchedOrder,
+  MatchResponse,
+} from './matching.js'
