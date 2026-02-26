@@ -4,4 +4,7 @@ dist
 .DS_Store
 .env
 .env.local
+.env*.secret
 .dev.vars
+*.secret
+*.private.key
