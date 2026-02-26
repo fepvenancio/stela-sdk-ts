@@ -7,7 +7,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "TypeScript SDK for the Stela P2P lending protocol on StarkNet",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -20,7 +20,10 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist", "src/abi"],
+  "files": [
+    "dist",
+    "src/abi"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -38,6 +41,13 @@
     "typescript": "^5.7.0",
     "vitest": "^2.0.0"
   },
-  "keywords": ["starknet", "stela", "p2p", "lending", "defi", "sdk"],
+  "keywords": [
+    "starknet",
+    "stela",
+    "p2p",
+    "lending",
+    "defi",
+    "sdk"
+  ],
   "license": "MIT"
 }
