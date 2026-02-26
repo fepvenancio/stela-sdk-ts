@@ -47,6 +47,16 @@ export class InscriptionClient {
     return extractU256(result)
   }
 
+  async getNonce(address: string): Promise<bigint> {
+    const result = await this.contract.call('nonces', [address])
+    return BigInt(String((result as unknown[])[0] ?? '0'))
+  }
+
+  async getRelayerFee(): Promise<bigint> {
+    const result = await this.contract.call('get_relayer_fee')
+    return extractU256(result)
+  }
+
   // ── Call Builders ──────────────────────────────────────────────────
 
   buildCreateInscription(params: InscriptionParams): Call {
@@ -100,6 +110,66 @@ export class InscriptionClient {
       entrypoint: 'redeem',
       calldata: [...toU256(inscriptionId), ...toU256(shares)],
     }
+  }
+
+  buildSettle(params: {
+    order: {
+      borrower: string
+      debtHash: string
+      interestHash: string
+      collateralHash: string
+      debtCount: number
+      interestCount: number
+      collateralCount: number
+      duration: bigint
+      deadline: bigint
+      multiLender: boolean
+      nonce: bigint
+    }
+    debtAssets: Asset[]
+    interestAssets: Asset[]
+    collateralAssets: Asset[]
+    borrowerSig: string[]
+    offer: {
+      orderHash: string
+      lender: string
+      issuedDebtPercentage: bigint
+      nonce: bigint
+    }
+    lenderSig: string[]
+  }): Call {
+    const calldata: string[] = [
+      // Order struct fields
+      params.order.borrower,
+      params.order.debtHash,
+      params.order.interestHash,
+      params.order.collateralHash,
+      String(params.order.debtCount),
+      String(params.order.interestCount),
+      String(params.order.collateralCount),
+      params.order.duration.toString(),
+      params.order.deadline.toString(),
+      params.order.multiLender ? '1' : '0',
+      params.order.nonce.toString(),
+      // debt_assets array
+      ...serializeAssets(params.debtAssets),
+      // interest_assets array
+      ...serializeAssets(params.interestAssets),
+      // collateral_assets array
+      ...serializeAssets(params.collateralAssets),
+      // borrower_sig array
+      String(params.borrowerSig.length),
+      ...params.borrowerSig,
+      // offer struct
+      params.offer.orderHash,
+      params.offer.lender,
+      ...toU256(params.offer.issuedDebtPercentage),
+      params.offer.nonce.toString(),
+      // lender_sig array
+      String(params.lenderSig.length),
+      ...params.lenderSig,
+    ]
+    return { contractAddress: this.address, entrypoint: 'settle', calldata }
   }
 
   // ── Execute Methods ────────────────────────────────────────────────

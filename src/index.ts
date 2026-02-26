@@ -74,6 +74,17 @@ export {
 export { SELECTORS } from './events/index.js'
 export { parseEvent, parseEvents } from './events/index.js'
 
+// ── Offchain ─────────────────────────────────────────────────────────
+export {
+  getInscriptionOrderTypedData,
+  getLendOfferTypedData,
+  hashAssets,
+  serializeSignature,
+  deserializeSignature,
+} from './offchain/index.js'
+
+export type { StoredSignature } from './offchain/index.js'
+
 // ── Clients ──────────────────────────────────────────────────────────
 export {
   InscriptionClient,
