@@ -13,6 +13,7 @@ Complete reference for every exported function, class, type, and constant in `@f
   - [LockerClient](#lockerclient)
   - [ApiClient](#apiclient)
   - [ApiError](#apierror)
+  - [Matching Engine (ABI-only)](#matching-engine-abi-only-no-sdk-wrappers-yet)
 - [Constants](#constants)
   - [STELA_ADDRESS](#stela_address)
   - [resolveNetwork](#resolvenetwork)
@@ -311,6 +312,130 @@ Liquidate an expired loan.
 **`redeem(inscriptionId: bigint, shares: bigint): Promise<{ transaction_hash: string }>`**
 
 Redeem ERC1155 shares after a loan is repaid or liquidated.
+
+---
+
+### Matching Engine (ABI-only, no SDK wrappers yet)
+
+The Stela contract ABI includes a matching-engine module with three additional entry points. These functions are present in the on-chain ABI (`src/abi/stela.json`) but **do not yet have client wrappers** in the SDK. SDK wrappers and a `SignedOrder` TypeScript type are planned for a future release. In the meantime, advanced integrators can invoke these functions via raw calldata using `InscriptionClient.execute()` or directly through starknet.js.
+
+#### `SignedOrder` struct (ABI)
+
+The `SignedOrder` struct (`stela::types::signed_order::SignedOrder`) is used by all three entry points:
+
+| Field | ABI Type | Description |
+|-------|----------|-------------|
+| `maker` | `ContractAddress` | Address of the order creator (the lender offering to fill) |
+| `allowed_taker` | `ContractAddress` | Restrict who can fill against this order (`0x0` = anyone) |
+| `inscription_id` | `u256` | ID of the inscription this order targets |
+| `bps` | `u256` | Basis points of debt the maker is willing to fill |
+| `deadline` | `u64` | Unix timestamp after which the order expires |
+| `nonce` | `felt252` | Maker's nonce (for replay protection and bulk cancellation) |
+| `min_fill_bps` | `u256` | Minimum basis points a taker must fill in a single transaction |
+
+#### `fill_signed_order`
+
+Fill a maker's signed order on their behalf. The caller (taker) provides the maker's SNIP-12 signature and specifies how many basis points to fill.
+
+**ABI signature:**
+
+```
+fn fill_signed_order(
+    order: SignedOrder,
+    signature: Array<felt252>,
+    fill_bps: u256,
+)
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `order` | `SignedOrder` | The signed order struct |
+| `signature` | `Array<felt252>` | Maker's SNIP-12 signature `[r, s]` |
+| `fill_bps` | `u256` | Basis points to fill in this transaction (must be >= `order.min_fill_bps`) |
+
+**Raw calldata example:**
+
+```ts
+const call: Call = {
+  contractAddress: stelaAddress,
+  entrypoint: 'fill_signed_order',
+  calldata: [
+    order.maker,
+    order.allowed_taker,
+    ...toU256(order.inscription_id),
+    ...toU256(order.bps),
+    String(order.deadline),
+    String(order.nonce),
+    ...toU256(order.min_fill_bps),
+    // signature array
+    String(signature.length),
+    ...signature,
+    // fill_bps
+    ...toU256(fillBps),
+  ],
+}
+await client.execute([...approvalCalls, call])
+```
+
+#### `cancel_order`
+
+Cancel a specific signed order. Only the order's `maker` can cancel. This marks the order hash as used so it cannot be filled.
+
+**ABI signature:**
+
+```
+fn cancel_order(order: SignedOrder)
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `order` | `SignedOrder` | The order to cancel (must match the original signed fields exactly) |
+
+**Raw calldata example:**
+
+```ts
+const call: Call = {
+  contractAddress: stelaAddress,
+  entrypoint: 'cancel_order',
+  calldata: [
+    order.maker,
+    order.allowed_taker,
+    ...toU256(order.inscription_id),
+    ...toU256(order.bps),
+    String(order.deadline),
+    String(order.nonce),
+    ...toU256(order.min_fill_bps),
+  ],
+}
+await client.execute([call])
+```
+
+#### `cancel_orders_by_nonce`
+
+Bulk-cancel all orders with a nonce lower than `min_nonce`. This is a gas-efficient way to invalidate many outstanding orders at once.
+
+**ABI signature:**
+
+```
+fn cancel_orders_by_nonce(min_nonce: felt252)
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `min_nonce` | `felt252` | New minimum nonce. All orders signed with a nonce below this value become invalid. |
+
+**Raw calldata example:**
+
+```ts
+const call: Call = {
+  contractAddress: stelaAddress,
+  entrypoint: 'cancel_orders_by_nonce',
+  calldata: [String(newMinNonce)],
+}
+await client.execute([call])
+```
+
+> **Note:** SDK wrappers (`buildFillSignedOrder`, `buildCancelOrder`, `buildCancelOrdersByNonce`) and a TypeScript `SignedOrder` type will be added in a future release.
 
 ---
 
