@@ -618,7 +618,7 @@ function convertToShares(
 
 Convert a fill percentage to shares, matching the contract's share math.
 
-**Formula:** `percentage * (totalSupply + VIRTUAL_SHARE_OFFSET) / (currentIssuedPercentage + 1)`
+**Formula:** `percentage * (totalSupply + VIRTUAL_SHARE_OFFSET) / max(currentIssuedPercentage, 1)`
 
 ```ts
 const shares = convertToShares(5000n, 0n, 0n)
@@ -650,7 +650,7 @@ function sharesToPercentage(
 
 Convert shares back to a percentage of the inscription.
 
-**Formula:** `shares * (currentIssuedPercentage + 1) / (totalSupply + VIRTUAL_SHARE_OFFSET)`
+**Formula:** `shares * max(currentIssuedPercentage, 1) / (totalSupply + VIRTUAL_SHARE_OFFSET)`
 
 ```ts
 const pct = sharesToPercentage(shares, totalSupply, issuedPct)
