@@ -6,7 +6,8 @@ export function convertToShares(
   totalSupply: bigint,
   currentIssuedPercentage: bigint,
 ): bigint {
-  return (percentage * (totalSupply + VIRTUAL_SHARE_OFFSET)) / (currentIssuedPercentage + 1n)
+  const denominator = currentIssuedPercentage === 0n ? 1n : currentIssuedPercentage
+  return (percentage * (totalSupply + VIRTUAL_SHARE_OFFSET)) / denominator
 }
 
 /** Scale a value by a percentage in basis points */
@@ -20,7 +21,8 @@ export function sharesToPercentage(
   totalSupply: bigint,
   currentIssuedPercentage: bigint,
 ): bigint {
-  return (shares * (currentIssuedPercentage + 1n)) / (totalSupply + VIRTUAL_SHARE_OFFSET)
+  const effectivePct = currentIssuedPercentage === 0n ? 1n : currentIssuedPercentage
+  return (shares * effectivePct) / (totalSupply + VIRTUAL_SHARE_OFFSET)
 }
 
 /** Calculate the fee portion of shares given a fee in basis points */
