@@ -74,6 +74,9 @@ export function getInscriptionOrderTypedData(params: {
 /**
  * Build SNIP-12 TypedData for a lender's LendOffer.
  * The lender signs this off-chain to accept an order without gas.
+ *
+ * @param lenderCommitment - Privacy commitment. When non-zero, shares are committed to the
+ *   privacy pool's Merkle tree instead of minting ERC1155 to the lender. Defaults to '0'.
  */
 export function getLendOfferTypedData(params: {
   orderHash: string
@@ -81,6 +84,8 @@ export function getLendOfferTypedData(params: {
   issuedDebtPercentage: bigint
   nonce: bigint
   chainId: string
+  /** Privacy commitment (default '0' = non-private). */
+  lenderCommitment?: string
 }): TypedData {
   return {
     types: {
@@ -95,6 +100,7 @@ export function getLendOfferTypedData(params: {
         { name: 'lender', type: 'ContractAddress' },
         { name: 'issued_debt_percentage', type: 'u256' },
         { name: 'nonce', type: 'felt' },
+        { name: 'lender_commitment', type: 'felt' },
       ],
       u256: [
         { name: 'low', type: 'u128' },
@@ -114,6 +120,7 @@ export function getLendOfferTypedData(params: {
         high: (params.issuedDebtPercentage >> 128n).toString(),
       },
       nonce: params.nonce.toString(),
+      lender_commitment: params.lenderCommitment ?? '0',
     },
   }
 }

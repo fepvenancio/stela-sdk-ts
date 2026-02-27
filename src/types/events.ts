@@ -119,6 +119,27 @@ export interface OrdersBulkCancelledEvent {
   block_number: number
 }
 
+/** PrivateSettled event (emitted by settle() when lender_commitment != 0) */
+export interface PrivateSettledEvent {
+  type: 'PrivateSettled'
+  inscription_id: bigint
+  lender_commitment: string
+  shares_committed: bigint
+  transaction_hash: string
+  block_number: number
+}
+
+/** PrivateSharesRedeemed event (emitted by private_redeem()) */
+export interface PrivateSharesRedeemedEvent {
+  type: 'PrivateSharesRedeemed'
+  inscription_id: bigint
+  nullifier: string
+  shares: bigint
+  recipient: string
+  transaction_hash: string
+  block_number: number
+}
+
 /** Discriminated union of all Stela protocol events */
 export type StelaEvent =
   | InscriptionCreatedEvent
@@ -132,3 +153,5 @@ export type StelaEvent =
   | OrderFilledEvent
   | OrderCancelledEvent
   | OrdersBulkCancelledEvent
+  | PrivateSettledEvent
+  | PrivateSharesRedeemedEvent

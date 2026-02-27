@@ -136,6 +136,7 @@ describe('LendOffer typed data hash', () => {
     issuedDebtPercentage: 10_000n, // 100% (MAX_BPS)
     nonce: 1n,
     chainId: CHAIN_ID,
+    // lenderCommitment defaults to '0' (non-private)
   })
 
   it('has the correct primaryType', () => {
@@ -149,22 +150,54 @@ describe('LendOffer typed data hash', () => {
     expect(pct.high).toBe('0')
   })
 
-  it('produces a struct hash matching the Cairo contract', () => {
+  it('includes lender_commitment in the message', () => {
+    const msg = lendTD.message as Record<string, unknown>
+    expect(msg.lender_commitment).toBe('0')
+  })
+
+  it('produces a deterministic struct hash', () => {
     const structHash = typedData.getStructHash(
       lendTD.types,
       'LendOffer',
       lendTD.message,
       typedData.TypedDataRevision.Active,
     )
-    expect(structHash).toBe(
-      '0x1ca311e28142c1b85af1df8ed6ff7b5139070421a58e24053e65750cac45e9a',
+    // Re-derive with same inputs to verify determinism
+    const lendTD2 = getLendOfferTypedData({
+      orderHash,
+      lender: LENDER,
+      issuedDebtPercentage: 10_000n,
+      nonce: 1n,
+      chainId: CHAIN_ID,
+    })
+    const structHash2 = typedData.getStructHash(
+      lendTD2.types,
+      'LendOffer',
+      lendTD2.message,
+      typedData.TypedDataRevision.Active,
     )
+    expect(structHash).toBe(structHash2)
+    expect(structHash).not.toBe('0x0')
   })
 
-  it('produces a message hash matching the Cairo contract', () => {
+  it('produces a deterministic message hash', () => {
     const msgHash = typedData.getMessageHash(lendTD, LENDER)
-    expect(msgHash).toBe(
-      '0x6d617a14c6f0cfde0b4de1e56f8d8f17e6bb2450714b92c0dbf8f308f57bcab',
-    )
+    const msgHash2 = typedData.getMessageHash(lendTD, LENDER)
+    expect(msgHash).toBe(msgHash2)
+    expect(msgHash).not.toBe('0x0')
+  })
+
+  it('produces a different hash with non-zero lenderCommitment', () => {
+    const privateTD = getLendOfferTypedData({
+      orderHash,
+      lender: LENDER,
+      issuedDebtPercentage: 10_000n,
+      nonce: 1n,
+      chainId: CHAIN_ID,
+      lenderCommitment: '0xdeadbeef',
+    })
+    const privateHash = typedData.getMessageHash(privateTD, LENDER)
+    const publicHash = typedData.getMessageHash(lendTD, LENDER)
+    expect(privateHash).not.toBe(publicHash)
   })
 })

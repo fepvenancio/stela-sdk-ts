@@ -1,6 +1,7 @@
 import { Contract, type RpcProvider, type Account } from 'starknet'
 import type { Call } from '../types/common.js'
 import type { Asset, InscriptionParams, StoredInscription, SignedOrder } from '../types/inscription.js'
+import type { PrivateRedeemRequest } from '../privacy/types.js'
 import stelaAbi from '../abi/stela.json'
 import { toU256, fromU256 } from '../utils/u256.js'
 import { ASSET_TYPE_ENUM } from '../constants/protocol.js'
@@ -142,6 +143,22 @@ export class InscriptionClient {
     }
   }
 
+  buildPrivateRedeem(request: PrivateRedeemRequest, proof: string[]): Call {
+    const calldata: string[] = [
+      // PrivateRedeemRequest struct fields (must match Cairo Serde order)
+      request.root,
+      ...toU256(request.inscriptionId),
+      ...toU256(request.shares),
+      request.nullifier,
+      request.changeCommitment,
+      request.recipient,
+      // proof array
+      String(proof.length),
+      ...proof,
+    ]
+    return { contractAddress: this.address, entrypoint: 'private_redeem', calldata }
+  }
+
   buildSettle(params: {
     order: {
       borrower: string
@@ -165,6 +182,8 @@ export class InscriptionClient {
       lender: string
       issuedDebtPercentage: bigint
       nonce: bigint
+      /** Privacy commitment. When non-zero, shares go to privacy pool. Default '0'. */
+      lenderCommitment?: string
     }
     lenderSig: string[]
   }): Call {
@@ -195,6 +214,7 @@ export class InscriptionClient {
       params.offer.lender,
       ...toU256(params.offer.issuedDebtPercentage),
       params.offer.nonce.toString(),
+      params.offer.lenderCommitment ?? '0',
       // lender_sig array
       String(params.lenderSig.length),
       ...params.lenderSig,
@@ -279,6 +299,10 @@ export class InscriptionClient {
 
   async redeem(inscriptionId: bigint, shares: bigint): Promise<{ transaction_hash: string }> {
     return this.execute([this.buildRedeem(inscriptionId, shares)])
+  }
+
+  async privateRedeem(request: PrivateRedeemRequest, proof: string[]): Promise<{ transaction_hash: string }> {
+    return this.execute([this.buildPrivateRedeem(request, proof)])
   }
 
   async fillSignedOrder(order: SignedOrder, signature: string[], fillBps: bigint, approvals?: Call[]): Promise<{ transaction_hash: string }> {
