@@ -3,7 +3,7 @@
 TypeScript SDK for the Stela P2P lending protocol on StarkNet.
 
 **Package:** `@fepvenancio/stela-sdk`
-**Version:** 0.2.3
+**Version:** 0.3.0
 **License:** MIT
 **Peer dependency:** `starknet ^6.0.0`
 

@@ -195,7 +195,7 @@ const status = computeStatus({
 
 // Format an address for display
 formatAddress('0x021e81956fccd8463342ff7e774bf6616b40e242fe0ea09a6f38735a604ea0e0')
-// "0x0068...6b90"
+// "0x021e...a0e0"
 
 // Compare two addresses (handles padding/casing differences)
 addressesEqual('0x68...', '0x0068...')  // true

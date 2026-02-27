@@ -7,11 +7,11 @@ Stela enables peer-to-peer lending through on-chain inscriptions. Borrowers post
 ## Installation
 
 ```bash
-pnpm add stela-sdk starknet
+pnpm add @fepvenancio/stela-sdk starknet
 ```
 
 ```bash
-npm install stela-sdk starknet
+npm install @fepvenancio/stela-sdk starknet
 ```
 
 ## Quick Start
