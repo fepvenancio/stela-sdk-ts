@@ -46,3 +46,21 @@ export interface Inscription extends StoredInscription {
   id: string
   status: InscriptionStatus
 }
+
+/** Signed order for the matching engine (matches Cairo SignedOrder struct) */
+export interface SignedOrder {
+  /** Order creator (could be borrower or lender) */
+  maker: string
+  /** Zero address = open to anyone; nonzero = private OTC (only this address can fill) */
+  allowed_taker: string
+  /** The inscription being offered for filling */
+  inscription_id: bigint
+  /** Fill percentage being offered (in BPS, max 10,000) */
+  bps: bigint
+  /** Unix timestamp deadline for order expiration */
+  deadline: bigint
+  /** Maker nonce; bump via cancel_orders_by_nonce to invalidate batch */
+  nonce: string
+  /** Minimum acceptable partial fill (0 = any amount accepted) */
+  min_fill_bps: bigint
+}

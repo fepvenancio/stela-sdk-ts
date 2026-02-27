@@ -104,6 +104,60 @@ export function parseEvent(raw: RawEvent): StelaEvent | null {
       }
     }
 
+    case SELECTORS.OrderSettled: {
+      // keys: [selector, id_low, id_high, borrower, lender]
+      // data: [relayer, fee_low, fee_high]
+      return {
+        type: 'OrderSettled',
+        inscription_id: feltsToU256(raw.keys[1], raw.keys[2]),
+        borrower: raw.keys[3],
+        lender: raw.keys[4],
+        relayer: raw.data[0],
+        relayer_fee_amount: feltsToU256(raw.data[1], raw.data[2]),
+        transaction_hash: raw.transaction_hash,
+        block_number: raw.block_number,
+      }
+    }
+
+    case SELECTORS.OrderFilled: {
+      // keys: [selector, id_low, id_high, order_hash, taker]
+      // data: [fill_bps_low, fill_bps_high, total_filled_bps_low, total_filled_bps_high]
+      return {
+        type: 'OrderFilled',
+        inscription_id: feltsToU256(raw.keys[1], raw.keys[2]),
+        order_hash: raw.keys[3],
+        taker: raw.keys[4],
+        fill_bps: feltsToU256(raw.data[0], raw.data[1]),
+        total_filled_bps: feltsToU256(raw.data[2], raw.data[3]),
+        transaction_hash: raw.transaction_hash,
+        block_number: raw.block_number,
+      }
+    }
+
+    case SELECTORS.OrderCancelled: {
+      // keys: [selector, order_hash]
+      // data: [maker]
+      return {
+        type: 'OrderCancelled',
+        order_hash: raw.keys[1],
+        maker: raw.data[0],
+        transaction_hash: raw.transaction_hash,
+        block_number: raw.block_number,
+      }
+    }
+
+    case SELECTORS.OrdersBulkCancelled: {
+      // keys: [selector, maker]
+      // data: [new_min_nonce]
+      return {
+        type: 'OrdersBulkCancelled',
+        maker: raw.keys[1],
+        new_min_nonce: raw.data[0],
+        transaction_hash: raw.transaction_hash,
+        block_number: raw.block_number,
+      }
+    }
+
     default:
       return null
   }

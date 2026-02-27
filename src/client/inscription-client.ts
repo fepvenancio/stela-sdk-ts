@@ -1,6 +1,6 @@
 import { Contract, type RpcProvider, type Account } from 'starknet'
 import type { Call } from '../types/common.js'
-import type { Asset, InscriptionParams, StoredInscription } from '../types/inscription.js'
+import type { Asset, InscriptionParams, StoredInscription, SignedOrder } from '../types/inscription.js'
 import stelaAbi from '../abi/stela.json'
 import { toU256, fromU256 } from '../utils/u256.js'
 import { ASSET_TYPE_ENUM } from '../constants/protocol.js'
@@ -55,6 +55,36 @@ export class InscriptionClient {
   async getRelayerFee(): Promise<bigint> {
     const result = await this.contract.call('get_relayer_fee')
     return extractU256(result)
+  }
+
+  async getTreasury(): Promise<string> {
+    const result = await this.contract.call('get_treasury')
+    return String((result as unknown[])[0])
+  }
+
+  async isPaused(): Promise<boolean> {
+    const result = await this.contract.call('is_paused')
+    return Boolean((result as unknown[])[0])
+  }
+
+  async isOrderRegistered(orderHash: string): Promise<boolean> {
+    const result = await this.contract.call('is_order_registered', [orderHash])
+    return Boolean((result as unknown[])[0])
+  }
+
+  async isOrderCancelled(orderHash: string): Promise<boolean> {
+    const result = await this.contract.call('is_order_cancelled', [orderHash])
+    return Boolean((result as unknown[])[0])
+  }
+
+  async getFilledBps(orderHash: string): Promise<bigint> {
+    const result = await this.contract.call('get_filled_bps', [orderHash])
+    return extractU256(result)
+  }
+
+  async getMakerMinNonce(maker: string): Promise<string> {
+    const result = await this.contract.call('get_maker_min_nonce', [maker])
+    return String((result as unknown[])[0] ?? '0')
   }
 
   // ── Call Builders ──────────────────────────────────────────────────
@@ -172,6 +202,46 @@ export class InscriptionClient {
     return { contractAddress: this.address, entrypoint: 'settle', calldata }
   }
 
+  buildFillSignedOrder(order: SignedOrder, signature: string[], fillBps: bigint): Call {
+    const calldata: string[] = [
+      // SignedOrder struct fields
+      order.maker,
+      order.allowed_taker,
+      ...toU256(order.inscription_id),
+      ...toU256(order.bps),
+      order.deadline.toString(),
+      order.nonce,
+      ...toU256(order.min_fill_bps),
+      // signature array
+      String(signature.length),
+      ...signature,
+      // fill_bps
+      ...toU256(fillBps),
+    ]
+    return { contractAddress: this.address, entrypoint: 'fill_signed_order', calldata }
+  }
+
+  buildCancelOrder(order: SignedOrder): Call {
+    const calldata: string[] = [
+      order.maker,
+      order.allowed_taker,
+      ...toU256(order.inscription_id),
+      ...toU256(order.bps),
+      order.deadline.toString(),
+      order.nonce,
+      ...toU256(order.min_fill_bps),
+    ]
+    return { contractAddress: this.address, entrypoint: 'cancel_order', calldata }
+  }
+
+  buildCancelOrdersByNonce(minNonce: string): Call {
+    return {
+      contractAddress: this.address,
+      entrypoint: 'cancel_orders_by_nonce',
+      calldata: [minNonce],
+    }
+  }
+
   // ── Execute Methods ────────────────────────────────────────────────
 
   /**
@@ -209,6 +279,19 @@ export class InscriptionClient {
 
   async redeem(inscriptionId: bigint, shares: bigint): Promise<{ transaction_hash: string }> {
     return this.execute([this.buildRedeem(inscriptionId, shares)])
+  }
+
+  async fillSignedOrder(order: SignedOrder, signature: string[], fillBps: bigint, approvals?: Call[]): Promise<{ transaction_hash: string }> {
+    const calls = [...(approvals ?? []), this.buildFillSignedOrder(order, signature, fillBps)]
+    return this.execute(calls)
+  }
+
+  async cancelOrder(order: SignedOrder): Promise<{ transaction_hash: string }> {
+    return this.execute([this.buildCancelOrder(order)])
+  }
+
+  async cancelOrdersByNonce(minNonce: string): Promise<{ transaction_hash: string }> {
+    return this.execute([this.buildCancelOrdersByNonce(minNonce)])
   }
 }
 

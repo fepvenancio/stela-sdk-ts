@@ -15,6 +15,7 @@ export type {
   InscriptionParams,
   StoredInscription,
   Inscription,
+  SignedOrder,
 } from './inscription.js'
 
 export type {
@@ -36,6 +37,10 @@ export type {
   InscriptionLiquidatedEvent,
   SharesRedeemedEvent,
   TransferSingleEvent,
+  OrderSettledEvent,
+  OrderFilledEvent,
+  OrderCancelledEvent,
+  OrdersBulkCancelledEvent,
   StelaEvent,
 } from './events.js'
 

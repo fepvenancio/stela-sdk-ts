@@ -77,6 +77,48 @@ export interface TransferSingleEvent {
   block_number: number
 }
 
+/** OrderSettled event (emitted by settle()) */
+export interface OrderSettledEvent {
+  type: 'OrderSettled'
+  inscription_id: bigint
+  borrower: string
+  lender: string
+  relayer: string
+  relayer_fee_amount: bigint
+  transaction_hash: string
+  block_number: number
+}
+
+/** OrderFilled event (emitted by fill_signed_order()) */
+export interface OrderFilledEvent {
+  type: 'OrderFilled'
+  inscription_id: bigint
+  order_hash: string
+  taker: string
+  fill_bps: bigint
+  total_filled_bps: bigint
+  transaction_hash: string
+  block_number: number
+}
+
+/** OrderCancelled event (emitted by cancel_order()) */
+export interface OrderCancelledEvent {
+  type: 'OrderCancelled'
+  order_hash: string
+  maker: string
+  transaction_hash: string
+  block_number: number
+}
+
+/** OrdersBulkCancelled event (emitted by cancel_orders_by_nonce()) */
+export interface OrdersBulkCancelledEvent {
+  type: 'OrdersBulkCancelled'
+  maker: string
+  new_min_nonce: string
+  transaction_hash: string
+  block_number: number
+}
+
 /** Discriminated union of all Stela protocol events */
 export type StelaEvent =
   | InscriptionCreatedEvent
@@ -86,3 +128,7 @@ export type StelaEvent =
   | InscriptionLiquidatedEvent
   | SharesRedeemedEvent
   | TransferSingleEvent
+  | OrderSettledEvent
+  | OrderFilledEvent
+  | OrderCancelledEvent
+  | OrdersBulkCancelledEvent

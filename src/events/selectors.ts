@@ -9,4 +9,8 @@ export const SELECTORS = {
   InscriptionLiquidated: hash.getSelectorFromName('InscriptionLiquidated'),
   SharesRedeemed: hash.getSelectorFromName('SharesRedeemed'),
   TransferSingle: hash.getSelectorFromName('TransferSingle'),
+  OrderSettled: hash.getSelectorFromName('OrderSettled'),
+  OrderFilled: hash.getSelectorFromName('OrderFilled'),
+  OrderCancelled: hash.getSelectorFromName('OrderCancelled'),
+  OrdersBulkCancelled: hash.getSelectorFromName('OrdersBulkCancelled'),
 } as const
