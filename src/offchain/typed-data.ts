@@ -72,6 +72,31 @@ export function getInscriptionOrderTypedData(params: {
 }
 
 /**
+ * Build SNIP-12 TypedData for a private lend offer.
+ *
+ * Convenience wrapper around getLendOfferTypedData that sets lender to zero address
+ * and includes the deposit commitment. For private settlements, the lender is anonymous
+ * — the privacy pool's deposit commitment proves ownership instead.
+ */
+export function getPrivateLendOfferTypedData(params: {
+  orderHash: string
+  issuedDebtPercentage: bigint
+  nonce: bigint
+  chainId: string
+  /** The deposit commitment from the privacy pool shield() call. */
+  depositCommitment: string
+}): TypedData {
+  return getLendOfferTypedData({
+    orderHash: params.orderHash,
+    lender: '0x0',
+    issuedDebtPercentage: params.issuedDebtPercentage,
+    nonce: params.nonce,
+    chainId: params.chainId,
+    lenderCommitment: params.depositCommitment,
+  })
+}
+
+/**
  * Build SNIP-12 TypedData for a lender's LendOffer.
  * The lender signs this off-chain to accept an order without gas.
  *

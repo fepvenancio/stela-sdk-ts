@@ -70,6 +70,33 @@ export function generateSalt(): string {
 }
 
 /**
+ * Compute a deposit commitment for the privacy pool's shield() call.
+ *
+ * This is the commitment that a depositor provides when shielding tokens into the privacy pool.
+ * It links the depositor, token, amount, and a secret salt so the deposit can later be consumed
+ * during private settlement.
+ *
+ * commitment = Poseidon(domain, depositor, token, amount.low, amount.high, salt)
+ */
+export function computeDepositCommitment(
+  depositor: string,
+  token: string,
+  amount: bigint,
+  salt: bigint,
+): string {
+  const [amountLow, amountHigh] = toU256(amount)
+
+  return hash.computePoseidonHashOnElements([
+    COMMITMENT_DOMAIN,
+    depositor,
+    token,
+    amountLow,
+    amountHigh,
+    '0x' + salt.toString(16),
+  ])
+}
+
+/**
  * Create a full private note: generates salt, computes commitment.
  */
 export function createPrivateNote(

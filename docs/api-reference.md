@@ -1,665 +1,26 @@
 # API Reference
 
-Complete reference for every exported function, class, type, and constant in `@fepvenancio/stela-sdk`.
+Complete reference for every exported function, class, and constant in `@fepvenancio/stela-sdk`.
 
 ---
 
 ## Table of Contents
 
-- [Clients](#clients)
+- [Constants](#constants)
+- [Utilities](#utilities)
+- [Tokens](#tokens)
+- [Math](#math)
+- [Events](#events)
+- [Off-Chain (SNIP-12)](#off-chain-snip-12)
+- [Privacy](#privacy)
+- [Client Classes](#client-classes)
   - [StelaSdk](#stelasdk)
   - [InscriptionClient](#inscriptionclient)
   - [ShareClient](#shareclient)
   - [LockerClient](#lockerclient)
   - [ApiClient](#apiclient)
   - [ApiError](#apierror)
-  - [Matching Engine](#matching-engine)
-- [Constants](#constants)
-  - [STELA_ADDRESS](#stela_address)
-  - [resolveNetwork](#resolvenetwork)
-  - [MAX_BPS](#max_bps)
-  - [VIRTUAL_SHARE_OFFSET](#virtual_share_offset)
-  - [ASSET_TYPE_ENUM](#asset_type_enum)
-  - [ASSET_TYPE_NAMES](#asset_type_names)
-- [Math](#math)
-  - [convertToShares](#converttoshares)
-  - [scaleByPercentage](#scalebypercentage)
-  - [sharesToPercentage](#sharestopercentage)
-  - [calculateFeeShares](#calculatefeeshares)
-- [Events](#events)
-  - [SELECTORS](#selectors)
-  - [parseEvent](#parseevent)
-  - [parseEvents](#parseevents)
-- [Off-Chain (SNIP-12)](#off-chain-snip-12)
-  - [getInscriptionOrderTypedData](#getinscriptionordertypeddata)
-  - [getLendOfferTypedData](#getlendoffertypeddata)
-  - [hashAssets](#hashassets)
-  - [serializeSignature](#serializesignature)
-  - [deserializeSignature](#deserializesignature)
-- [Tokens](#tokens)
-  - [TOKENS](#tokens-1)
-  - [getTokensForNetwork](#gettokensfornetwork)
-  - [findTokenByAddress](#findtokenbyaddress)
-- [Utilities](#utilities)
-  - [toU256](#tou256)
-  - [fromU256](#fromu256)
-  - [inscriptionIdToHex](#inscriptionidtohex)
-  - [toHex](#tohex)
-  - [formatAddress](#formataddress)
-  - [normalizeAddress](#normalizeaddress)
-  - [addressesEqual](#addressesequal)
-  - [parseAmount](#parseamount)
-  - [formatTokenValue](#formattokenvalue)
-  - [formatDuration](#formatduration)
-  - [formatTimestamp](#formattimestamp)
-  - [computeStatus](#computestatus)
-- [Types](#types)
-
----
-
-## Clients
-
-### StelaSdk
-
-Main SDK facade that wires together all clients.
-
-```ts
-import { StelaSdk } from '@fepvenancio/stela-sdk'
-
-const sdk = new StelaSdk(opts: StelaSdkOptions)
-```
-
-**`StelaSdkOptions`**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `provider` | `RpcProvider` | Yes | StarkNet RPC provider |
-| `account` | `Account` | No | Connected account for write operations |
-| `network` | `Network \| string` | No | `"sepolia"` or `"mainnet"`. Defaults to `"sepolia"` |
-| `apiBaseUrl` | `string` | No | Custom API base URL. Defaults to `"https://stela-dapp.xyz/api"` |
-| `stelaAddress` | `string` | No | Override the contract address (for custom deployments) |
-
-**Properties**
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `inscriptions` | `InscriptionClient` | Client for inscription read/write operations |
-| `shares` | `ShareClient` | Client for ERC1155 share balance queries |
-| `locker` | `LockerClient` | Client for collateral locker operations |
-| `api` | `ApiClient` | HTTP client for the Stela indexer API |
-| `network` | `Network` | Resolved network (`"sepolia"` or `"mainnet"`) |
-| `stelaAddress` | `string` | Resolved Stela contract address |
-
----
-
-### InscriptionClient
-
-Client for reading inscription data from the on-chain contract and building/executing protocol transactions.
-
-```ts
-import { InscriptionClient } from '@fepvenancio/stela-sdk'
-
-const client = new InscriptionClient(opts: InscriptionClientOptions)
-```
-
-**`InscriptionClientOptions`**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `stelaAddress` | `string` | Yes | Stela protocol contract address |
-| `provider` | `RpcProvider` | Yes | StarkNet RPC provider |
-| `account` | `Account` | No | Connected account for write operations |
-
-#### Read Methods
-
-**`getInscription(inscriptionId: bigint): Promise<StoredInscription>`**
-
-Read a stored inscription from the contract.
-
-```ts
-const inscription = await client.getInscription(1n)
-// { borrower, lender, duration, deadline, signed_at, issued_debt_percentage,
-//   is_repaid, liquidated, multi_lender, debt_asset_count, interest_asset_count,
-//   collateral_asset_count }
-```
-
-**`getLocker(inscriptionId: bigint): Promise<string>`**
-
-Get the locker (TBA) contract address for an inscription.
-
-```ts
-const lockerAddress = await client.getLocker(1n)
-```
-
-**`getInscriptionFee(): Promise<bigint>`**
-
-Get the current inscription creation fee.
-
-```ts
-const fee = await client.getInscriptionFee() // bigint
-```
-
-**`convertToShares(inscriptionId: bigint, percentage: bigint): Promise<bigint>`**
-
-Call the on-chain `convert_to_shares` function for an inscription.
-
-```ts
-const shares = await client.convertToShares(1n, 5000n) // 50% -> shares
-```
-
-**`getNonce(address: string): Promise<bigint>`**
-
-Get the current nonce for an address (used in off-chain signing).
-
-```ts
-const nonce = await client.getNonce('0xADDRESS')
-```
-
-**`getRelayerFee(): Promise<bigint>`**
-
-Get the current relayer fee for off-chain settlement.
-
-```ts
-const fee = await client.getRelayerFee()
-```
-
-**`getTreasury(): Promise<string>`**
-
-Get the treasury address that receives protocol fees.
-
-```ts
-const treasury = await client.getTreasury() // "0x..."
-```
-
-**`isPaused(): Promise<boolean>`**
-
-Check whether the protocol is currently paused.
-
-```ts
-const paused = await client.isPaused()
-```
-
-**`isOrderRegistered(orderHash: string): Promise<boolean>`**
-
-Check whether a signed order hash has been registered (settled) on-chain.
-
-```ts
-const registered = await client.isOrderRegistered('0xORDER_HASH')
-```
-
-**`isOrderCancelled(orderHash: string): Promise<boolean>`**
-
-Check whether a signed order hash has been cancelled.
-
-```ts
-const cancelled = await client.isOrderCancelled('0xORDER_HASH')
-```
-
-**`getFilledBps(orderHash: string): Promise<bigint>`**
-
-Get the total basis points already filled for a signed order.
-
-```ts
-const filled = await client.getFilledBps('0xORDER_HASH') // bigint (0-10000)
-```
-
-**`getMakerMinNonce(maker: string): Promise<string>`**
-
-Get the current minimum nonce for a maker. Orders signed with a nonce below this value are invalid.
-
-```ts
-const minNonce = await client.getMakerMinNonce('0xMAKER')
-```
-
-#### Call Builders
-
-All `build*` methods return a `Call` object (`{ contractAddress, entrypoint, calldata }`) without executing anything. Use these to compose multi-call transactions or integrate with custom execution flows.
-
-**`buildCreateInscription(params: InscriptionParams): Call`**
-
-Build calldata for creating a new inscription.
-
-```ts
-const call = client.buildCreateInscription({
-  is_borrow: true,
-  debt_assets: [{ asset_address: '0x...', asset_type: 'ERC20', value: 1000000n, token_id: 0n }],
-  interest_assets: [],
-  collateral_assets: [],
-  duration: 604800n,
-  deadline: 1735689600n,
-  multi_lender: false,
-})
-```
-
-**`buildSignInscription(inscriptionId: bigint, bps: bigint): Call`**
-
-Build calldata for signing (lending to) an inscription. `bps` is the percentage in basis points (10000 = 100%).
-
-```ts
-const call = client.buildSignInscription(1n, 10000n)
-```
-
-**`buildCancelInscription(inscriptionId: bigint): Call`**
-
-Build calldata for cancelling an unsigned inscription.
-
-```ts
-const call = client.buildCancelInscription(1n)
-```
-
-**`buildRepay(inscriptionId: bigint): Call`**
-
-Build calldata for repaying a loan.
-
-```ts
-const call = client.buildRepay(1n)
-```
-
-**`buildLiquidate(inscriptionId: bigint): Call`**
-
-Build calldata for liquidating an expired loan.
-
-```ts
-const call = client.buildLiquidate(1n)
-```
-
-**`buildRedeem(inscriptionId: bigint, shares: bigint): Call`**
-
-Build calldata for redeeming ERC1155 shares.
-
-```ts
-const call = client.buildRedeem(1n, 500n)
-```
-
-**`buildSettle(params): Call`**
-
-Build calldata for settling an off-chain order+offer pair on-chain. This is used by relayers.
-
-```ts
-const call = client.buildSettle({
-  order: {
-    borrower: '0x...',
-    debtHash: '0x...',
-    interestHash: '0x...',
-    collateralHash: '0x...',
-    debtCount: 1,
-    interestCount: 0,
-    collateralCount: 1,
-    duration: 604800n,
-    deadline: 1735689600n,
-    multiLender: false,
-    nonce: 0n,
-  },
-  debtAssets: [...],
-  interestAssets: [...],
-  collateralAssets: [...],
-  borrowerSig: ['0xR', '0xS'],
-  offer: {
-    orderHash: '0x...',
-    lender: '0x...',
-    issuedDebtPercentage: 10000n,
-    nonce: 0n,
-  },
-  lenderSig: ['0xR', '0xS'],
-})
-```
-
-**`buildSettle` params type:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `order.borrower` | `string` | Borrower address |
-| `order.debtHash` | `string` | Poseidon hash of debt assets |
-| `order.interestHash` | `string` | Poseidon hash of interest assets |
-| `order.collateralHash` | `string` | Poseidon hash of collateral assets |
-| `order.debtCount` | `number` | Number of debt assets |
-| `order.interestCount` | `number` | Number of interest assets |
-| `order.collateralCount` | `number` | Number of collateral assets |
-| `order.duration` | `bigint` | Loan duration in seconds |
-| `order.deadline` | `bigint` | Order deadline as unix timestamp |
-| `order.multiLender` | `boolean` | Whether multiple lenders can fill the order |
-| `order.nonce` | `bigint` | Borrower's nonce |
-| `debtAssets` | `Asset[]` | Full debt asset array |
-| `interestAssets` | `Asset[]` | Full interest asset array |
-| `collateralAssets` | `Asset[]` | Full collateral asset array |
-| `borrowerSig` | `string[]` | Borrower's SNIP-12 signature `[r, s]` |
-| `offer.orderHash` | `string` | Hash of the order being accepted |
-| `offer.lender` | `string` | Lender address |
-| `offer.issuedDebtPercentage` | `bigint` | Percentage of debt being filled (basis points) |
-| `offer.nonce` | `bigint` | Lender's nonce |
-| `lenderSig` | `string[]` | Lender's SNIP-12 signature `[r, s]` |
-
-#### Execute Methods
-
-All execute methods require an `Account` to be provided in the constructor options. They return `Promise<{ transaction_hash: string }>`.
-
-**`execute(calls: Call[]): Promise<{ transaction_hash: string }>`**
-
-Execute one or more calls via the connected account. Use this to send custom call arrays.
-
-**`createInscription(params: InscriptionParams, approvals?: Call[]): Promise<{ transaction_hash: string }>`**
-
-Create a new inscription. Optional `approvals` (e.g. ERC20 approve calls) are bundled atomically in the same transaction.
-
-**`signInscription(inscriptionId: bigint, bps: bigint, approvals?: Call[]): Promise<{ transaction_hash: string }>`**
-
-Sign (lend to) an inscription. Optional `approvals` bundled atomically.
-
-**`cancelInscription(inscriptionId: bigint): Promise<{ transaction_hash: string }>`**
-
-Cancel an unsigned inscription.
-
-**`repay(inscriptionId: bigint, approvals?: Call[]): Promise<{ transaction_hash: string }>`**
-
-Repay a loan. Optional `approvals` bundled atomically.
-
-**`liquidate(inscriptionId: bigint): Promise<{ transaction_hash: string }>`**
-
-Liquidate an expired loan.
-
-**`redeem(inscriptionId: bigint, shares: bigint): Promise<{ transaction_hash: string }>`**
-
-Redeem ERC1155 shares after a loan is repaid or liquidated.
-
----
-
-### Matching Engine
-
-The matching engine enables off-chain signed orders for the lending market. A maker signs a `SignedOrder` off-chain; a taker can then fill it on-chain by providing the signature.
-
-#### `SignedOrder` type
-
-```ts
-import type { SignedOrder } from '@fepvenancio/stela-sdk'
-```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `maker` | `string` | Address of the order creator |
-| `allowed_taker` | `string` | Restrict who can fill (`"0x0"` = anyone) |
-| `inscription_id` | `bigint` | ID of the inscription this order targets |
-| `bps` | `bigint` | Basis points of debt the maker is willing to fill (max 10,000) |
-| `deadline` | `bigint` | Unix timestamp after which the order expires |
-| `nonce` | `string` | Maker's nonce for replay protection and bulk cancellation |
-| `min_fill_bps` | `bigint` | Minimum basis points a taker must fill in a single transaction (0 = any) |
-
-#### Call Builders
-
-**`buildFillSignedOrder(order: SignedOrder, signature: string[], fillBps: bigint): Call`**
-
-Build calldata for filling a maker's signed order. The caller (taker) provides the maker's SNIP-12 signature and specifies how many basis points to fill.
-
-```ts
-const call = client.buildFillSignedOrder(order, ['0xR', '0xS'], 5000n)
-// Bundle with approval calls for atomic execution
-await client.execute([...approvalCalls, call])
-```
-
-**`buildCancelOrder(order: SignedOrder): Call`**
-
-Build calldata for cancelling a specific signed order. Only the order's maker can cancel. This marks the order hash as used so it cannot be filled.
-
-```ts
-const call = client.buildCancelOrder(order)
-await client.execute([call])
-```
-
-**`buildCancelOrdersByNonce(minNonce: string): Call`**
-
-Build calldata for bulk-cancelling all orders with a nonce lower than `minNonce`. This is a gas-efficient way to invalidate many outstanding orders at once.
-
-```ts
-const call = client.buildCancelOrdersByNonce('5')
-await client.execute([call])
-```
-
-#### Execute Methods
-
-**`fillSignedOrder(order: SignedOrder, signature: string[], fillBps: bigint, approvals?: Call[]): Promise<{ transaction_hash: string }>`**
-
-Fill a signed order. Optional `approvals` (e.g. ERC20 approve calls) are bundled atomically in the same transaction.
-
-```ts
-const { transaction_hash } = await client.fillSignedOrder(
-  order,
-  ['0xR', '0xS'],
-  10000n,       // fill 100%
-  [approveCall],
-)
-```
-
-**`cancelOrder(order: SignedOrder): Promise<{ transaction_hash: string }>`**
-
-Cancel a specific signed order.
-
-```ts
-const { transaction_hash } = await client.cancelOrder(order)
-```
-
-**`cancelOrdersByNonce(minNonce: string): Promise<{ transaction_hash: string }>`**
-
-Bulk-cancel all orders signed with a nonce below `minNonce`.
-
-```ts
-const { transaction_hash } = await client.cancelOrdersByNonce('5')
-```
-
----
-
-### ShareClient
-
-Client for reading ERC1155 share balances on the Stela contract. Inscription IDs are token IDs -- each lender receives shares as ERC1155 tokens.
-
-```ts
-import { ShareClient } from '@fepvenancio/stela-sdk'
-
-const client = new ShareClient(opts: ShareClientOptions)
-```
-
-**`ShareClientOptions`**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `stelaAddress` | `string` | Yes | Stela protocol contract address |
-| `provider` | `RpcProvider` | Yes | StarkNet RPC provider |
-
-**`balanceOf(account: string, inscriptionId: bigint): Promise<bigint>`**
-
-Get share balance for an account on a specific inscription.
-
-```ts
-const shares = await client.balanceOf('0xLENDER', 1n)
-```
-
-**`balanceOfBatch(accounts: string[], inscriptionIds: bigint[]): Promise<bigint[]>`**
-
-Get share balances for multiple account/inscription pairs. Arrays must have the same length.
-
-```ts
-const balances = await client.balanceOfBatch(['0xA', '0xB'], [1n, 2n])
-```
-
-**`isApprovedForAll(owner: string, operator: string): Promise<boolean>`**
-
-Check if an operator is approved for all tokens of an owner.
-
-```ts
-const approved = await client.isApprovedForAll('0xOWNER', '0xOPERATOR')
-```
-
----
-
-### LockerClient
-
-Client for interacting with collateral locker accounts (Token Bound Accounts). Provides read methods for locker state and balances, and governance execution methods for executing calls through the locker.
-
-> Note: `LockerClient` is constructed internally by `StelaSdk`. It takes `(stelaContract, provider, account?)` as constructor arguments rather than an options object.
-
-**`getLockerAddress(inscriptionId: bigint): Promise<string>`**
-
-Get the Locker TBA address for an inscription.
-
-```ts
-const address = await sdk.locker.getLockerAddress(1n)
-```
-
-**`isUnlocked(inscriptionId: bigint): Promise<boolean>`**
-
-Check if a locker is unlocked (restrictions removed after repayment/liquidation).
-
-```ts
-const unlocked = await sdk.locker.isUnlocked(1n)
-```
-
-**`getLockerState(inscriptionId: bigint): Promise<LockerState>`**
-
-Get the full locker state (address and unlock status).
-
-```ts
-const state = await sdk.locker.getLockerState(1n)
-// { address: "0x...", isUnlocked: false }
-```
-
-**`getLockerBalance(inscriptionId: bigint, tokenAddress: string): Promise<bigint>`**
-
-Read an ERC20 balance held by a locker.
-
-```ts
-const balance = await sdk.locker.getLockerBalance(1n, '0xTOKEN')
-```
-
-**`getLockerBalances(inscriptionId: bigint, tokenAddresses: string[]): Promise<Map<string, bigint>>`**
-
-Read multiple ERC20 balances held by a locker.
-
-```ts
-const balances = await sdk.locker.getLockerBalances(1n, ['0xTOKEN_A', '0xTOKEN_B'])
-// Map { '0xTOKEN_A' => 1000000n, '0xTOKEN_B' => 500n }
-```
-
-**`buildLockerExecute(lockerAddress: string, innerCalls: Call[]): Call`**
-
-Build a `Call` to execute arbitrary calls through the Locker TBA. The Locker uses SNIP-6 account standard (`__execute__`). This is how a DAO retains governance power over locked collateral tokens (e.g. voting with locked governance tokens).
-
-```ts
-const voteCall: Call = {
-  contractAddress: '0xGOVERNANCE_TOKEN',
-  entrypoint: 'vote',
-  calldata: ['1'],  // proposal ID
-}
-const lockerCall = sdk.locker.buildLockerExecute('0xLOCKER', [voteCall])
-```
-
-**`executeThrough(inscriptionId: bigint, innerCall: Call): Promise<{ transaction_hash: string }>`**
-
-Execute a single governance call through the Locker. Requires account to be the inscription's borrower.
-
-```ts
-const { transaction_hash } = await sdk.locker.executeThrough(1n, voteCall)
-```
-
-**`executeThroughBatch(inscriptionId: bigint, innerCalls: Call[]): Promise<{ transaction_hash: string }>`**
-
-Execute multiple governance calls through the Locker in a single transaction.
-
-```ts
-const { transaction_hash } = await sdk.locker.executeThroughBatch(1n, [voteCall, delegateCall])
-```
-
----
-
-### ApiClient
-
-HTTP client for the Stela indexer API. Provides typed access to indexed inscription data, treasury views, share balances, and locker info.
-
-```ts
-import { ApiClient } from '@fepvenancio/stela-sdk'
-
-const api = new ApiClient(opts?: ApiClientOptions)
-```
-
-**`ApiClientOptions`**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `baseUrl` | `string` | No | API base URL. Defaults to `"https://stela-dapp.xyz/api"` |
-
-**`listInscriptions(params?: ListInscriptionsParams): Promise<ApiListResponse<InscriptionRow>>`**
-
-List inscriptions with optional filters.
-
-```ts
-const result = await api.listInscriptions({ status: 'open', page: 1, limit: 20 })
-// { data: InscriptionRow[], meta: { page, limit, total } }
-```
-
-**`ListInscriptionsParams`**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `status` | `string` | Filter by status |
-| `address` | `string` | Filter by address (borrower or lender) |
-| `page` | `number` | Page number |
-| `limit` | `number` | Results per page |
-
-**`getInscription(id: string): Promise<ApiDetailResponse<InscriptionRow>>`**
-
-Get a single inscription by ID.
-
-```ts
-const { data } = await api.getInscription('0x01')
-```
-
-**`getInscriptionEvents(id: string): Promise<ApiListResponse<InscriptionEventRow>>`**
-
-Get events for a specific inscription.
-
-```ts
-const { data } = await api.getInscriptionEvents('0x01')
-```
-
-**`getTreasuryView(address: string): Promise<ApiListResponse<TreasuryAsset>>`**
-
-Get treasury asset balances for an address.
-
-```ts
-const { data } = await api.getTreasuryView('0xADDRESS')
-```
-
-**`getLockers(address: string): Promise<ApiListResponse<LockerInfo>>`**
-
-Get locker info for inscriptions of an address.
-
-```ts
-const { data } = await api.getLockers('0xADDRESS')
-```
-
-**`getShareBalances(address: string): Promise<ApiListResponse<ShareBalance>>`**
-
-Get share balances for an address.
-
-```ts
-const { data } = await api.getShareBalances('0xADDRESS')
-```
-
----
-
-### ApiError
-
-Error class thrown by `ApiClient` when an HTTP request fails.
-
-```ts
-import { ApiError } from '@fepvenancio/stela-sdk'
-```
-
-**Properties**
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `status` | `number` | HTTP status code |
-| `message` | `string` | Error message |
-| `url` | `string` | The URL that failed |
-| `name` | `string` | Always `"ApiError"` |
+- [Accuracy Notes](#accuracy-notes)
 
 ---
 
@@ -671,12 +32,10 @@ import { ApiError } from '@fepvenancio/stela-sdk'
 const STELA_ADDRESS: Record<Network, string>
 ```
 
-Deployed Stela protocol contract addresses per network.
-
 | Network | Address |
 |---------|---------|
-| `sepolia` | `0x021e81956fccd8463342ff7e774bf6616b40e242fe0ea09a6f38735a604ea0e0` |
-| `mainnet` | `0x0` (not yet deployed) |
+| `sepolia` | `0x00b7deedb4ab03d94f54da2e7c911c2336b19c2a4610eb98f55cd7be5a53ece0` |
+| `mainnet` | `0x0` (placeholder -- not yet deployed) |
 
 ### resolveNetwork
 
@@ -684,7 +43,7 @@ Deployed Stela protocol contract addresses per network.
 function resolveNetwork(raw?: string): Network
 ```
 
-Validate and return a `Network` value. Falls back to `"sepolia"` if the input is invalid or omitted.
+Validate and return a `Network` value. Falls back to `'sepolia'` with a console warning if invalid.
 
 ```ts
 resolveNetwork('sepolia')  // 'sepolia'
@@ -713,257 +72,176 @@ Virtual share offset used in share math calculations. Matches the Cairo contract
 
 ```ts
 const ASSET_TYPE_ENUM: Record<AssetType, number>
+// { ERC20: 0, ERC721: 1, ERC1155: 2, ERC4626: 3 }
 ```
-
-Numeric enum values for asset types (matches the Cairo contract).
-
-| AssetType | Value |
-|-----------|-------|
-| `ERC20` | `0` |
-| `ERC721` | `1` |
-| `ERC1155` | `2` |
-| `ERC4626` | `3` |
 
 ### ASSET_TYPE_NAMES
 
 ```ts
 const ASSET_TYPE_NAMES: Record<number, AssetType>
+// { 0: 'ERC20', 1: 'ERC721', 2: 'ERC1155', 3: 'ERC4626' }
 ```
 
 Reverse mapping from numeric enum value to `AssetType` name.
 
----
-
-## Math
-
-Pure BigInt functions for share calculations. These mirror the on-chain math in the Cairo contract.
-
-### convertToShares
+### VALID_STATUSES
 
 ```ts
-function convertToShares(
-  percentage: bigint,
-  totalSupply: bigint,
-  currentIssuedPercentage: bigint,
-): bigint
+const VALID_STATUSES: readonly InscriptionStatus[]
+// ['open', 'partial', 'filled', 'repaid', 'liquidated', 'expired', 'cancelled']
 ```
 
-Convert a fill percentage to shares, matching the contract's share math.
-
-**Formula:** `percentage * (totalSupply + VIRTUAL_SHARE_OFFSET) / max(currentIssuedPercentage, 1)`
+### STATUS_LABELS
 
 ```ts
-const shares = convertToShares(5000n, 0n, 0n)
-```
-
-### scaleByPercentage
-
-```ts
-function scaleByPercentage(value: bigint, percentage: bigint): bigint
-```
-
-Scale a value by a percentage in basis points.
-
-**Formula:** `value * percentage / MAX_BPS`
-
-```ts
-scaleByPercentage(1000000n, 5000n)  // 500000n (50%)
-```
-
-### sharesToPercentage
-
-```ts
-function sharesToPercentage(
-  shares: bigint,
-  totalSupply: bigint,
-  currentIssuedPercentage: bigint,
-): bigint
-```
-
-Convert shares back to a percentage of the inscription.
-
-**Formula:** `shares * max(currentIssuedPercentage, 1) / (totalSupply + VIRTUAL_SHARE_OFFSET)`
-
-```ts
-const pct = sharesToPercentage(shares, totalSupply, issuedPct)
-```
-
-### calculateFeeShares
-
-```ts
-function calculateFeeShares(shares: bigint, feeBps: bigint): bigint
-```
-
-Calculate the fee portion of shares given a fee in basis points.
-
-**Formula:** `shares * feeBps / MAX_BPS`
-
-```ts
-calculateFeeShares(10000n, 250n)  // 250n (2.5% fee)
+const STATUS_LABELS: Record<InscriptionStatus, string>
+// { open: 'Open', partial: 'Partial', filled: 'Filled', ... }
 ```
 
 ---
 
-## Events
+## Utilities
 
-### SELECTORS
-
-```ts
-const SELECTORS: {
-  InscriptionCreated: string
-  InscriptionSigned: string
-  InscriptionCancelled: string
-  InscriptionRepaid: string
-  InscriptionLiquidated: string
-  SharesRedeemed: string
-  TransferSingle: string
-}
-```
-
-Pre-computed event selectors (StarkNet selector hashes) for all Stela protocol events. Computed using `hash.getSelectorFromName()` from `starknet.js`.
-
-### parseEvent
+### toU256
 
 ```ts
-function parseEvent(raw: RawEvent): StelaEvent | null
+function toU256(n: bigint): [string, string]
 ```
 
-Parse a single raw StarkNet event into a typed `StelaEvent`. Returns `null` if the event selector is not recognized.
+Convert a `bigint` to a `[low, high]` hex string pair for StarkNet u256 calldata. Throws `RangeError` for negative values or values exceeding 2^256 - 1.
 
 ```ts
-const event = parseEvent(rawEvent)
-if (event?.type === 'InscriptionCreated') {
-  console.log(event.inscription_id, event.creator)
-}
+toU256(0n)    // ['0x0', '0x0']
+toU256(123n)  // ['0x7b', '0x0']
 ```
 
-### parseEvents
+### fromU256
 
 ```ts
-function parseEvents(rawEvents: RawEvent[]): StelaEvent[]
+function fromU256(u: { low: bigint; high: bigint }): bigint
 ```
 
-Parse an array of raw events, skipping unrecognized ones.
+Convert a `{ low, high }` u256 object back to a `bigint`. Throws `RangeError` if components exceed u128.
 
 ```ts
-const events = parseEvents(rawEventsFromRpc)
+fromU256({ low: 123n, high: 0n })  // 123n
 ```
 
----
-
-## Off-Chain (SNIP-12)
-
-Functions for building SNIP-12 typed data for gasless off-chain signing, Poseidon asset hashing, and signature serialization.
-
-### getInscriptionOrderTypedData
+### inscriptionIdToHex
 
 ```ts
-function getInscriptionOrderTypedData(params: {
-  borrower: string
-  debtAssets: Asset[]
-  interestAssets: Asset[]
-  collateralAssets: Asset[]
-  debtCount: number
-  interestCount: number
-  collateralCount: number
-  duration: bigint
-  deadline: bigint
-  multiLender: boolean
-  nonce: bigint
-  chainId: string
-}): TypedData
+function inscriptionIdToHex(u: { low: bigint; high: bigint }): string
 ```
 
-Build SNIP-12 `TypedData` for a borrower's `InscriptionOrder`. The borrower signs this off-chain to create an order without gas. The domain separator uses name `"Stela"`, version `"v1"`, and revision `"1"`.
-
-Asset arrays are hashed with `hashAssets()` and included as felt values in the message.
+Convert a u256 to a `0x`-prefixed 64-character hex string. Useful for database keys.
 
 ```ts
-const typedData = getInscriptionOrderTypedData({
-  borrower: '0x...',
-  debtAssets: [...],
-  interestAssets: [...],
-  collateralAssets: [...],
-  debtCount: 1,
-  interestCount: 1,
-  collateralCount: 1,
-  duration: 604800n,
-  deadline: 1735689600n,
-  multiLender: false,
-  nonce: 0n,
-  chainId: 'SN_SEPOLIA',
-})
-
-const signature = await account.signMessage(typedData)
+inscriptionIdToHex({ low: 1n, high: 0n })
+// '0x0000000000000000000000000000000000000000000000000000000000000001'
 ```
 
-### getLendOfferTypedData
+### toHex
 
 ```ts
-function getLendOfferTypedData(params: {
-  orderHash: string
-  lender: string
-  issuedDebtPercentage: bigint
-  nonce: bigint
-  chainId: string
-}): TypedData
+function toHex(value: unknown): string
 ```
 
-Build SNIP-12 `TypedData` for a lender's `LendOffer`. The lender signs this off-chain to accept an order without gas.
+Convert any address-like value (`string`, `bigint`, `number`) to a hex string.
 
 ```ts
-const typedData = getLendOfferTypedData({
-  orderHash: '0x...',
-  lender: '0xLENDER',
-  issuedDebtPercentage: 10000n,
-  nonce: 0n,
-  chainId: 'SN_SEPOLIA',
-})
-
-const signature = await account.signMessage(typedData)
+toHex(255n)    // '0xff'
+toHex('0x1a')  // '0x1a'
+toHex(16)      // '0x10'
 ```
 
-### hashAssets
+### formatAddress
 
 ```ts
-function hashAssets(assets: Asset[]): string
+function formatAddress(address: unknown): string
 ```
 
-Hash an array of `Asset` objects using Poseidon, matching the Cairo contract's `hash_assets()` function. The hash includes the array length, and for each asset: `asset_address`, `asset_type` (as enum number), `value` (as u256 low/high), and `token_id` (as u256 low/high).
+Truncate an address for display: `0x049d...4dc7`.
+
+### normalizeAddress
 
 ```ts
-const hash = hashAssets([
-  { asset_address: '0x...', asset_type: 'ERC20', value: 1000000n, token_id: 0n }
-])
+function normalizeAddress(address: unknown): string
 ```
 
-### serializeSignature
+Normalize to a fully-padded, checksummed hex string (66 chars). Uses starknet.js `validateAndParseAddress` + `addAddressPadding`.
+
+### addressesEqual
 
 ```ts
-function serializeSignature(sig: string[]): StoredSignature
+function addressesEqual(a: unknown, b: unknown): boolean
 ```
 
-Serialize a starknet.js signature (`[r, s]`) to a `StoredSignature` object for database storage.
-
-**`StoredSignature`:** `{ r: string, s: string }`
+Compare two addresses for equality. Handles different zero-padding and casing.
 
 ```ts
-const stored = serializeSignature(['0xR_VALUE', '0xS_VALUE'])
-// { r: '0xR_VALUE', s: '0xS_VALUE' }
+addressesEqual('0x1', '0x0000...0001')  // true
 ```
 
-### deserializeSignature
+### parseAmount
 
 ```ts
-function deserializeSignature(stored: StoredSignature): string[]
+function parseAmount(humanAmount: string, decimals: number): bigint
 ```
 
-Deserialize a `StoredSignature` back to a `string[]` for on-chain use.
+Convert human-readable amount to on-chain raw value. Truncates excess fractional digits.
 
 ```ts
-const sig = deserializeSignature({ r: '0xR', s: '0xS' })
-// ['0xR', '0xS']
+parseAmount('1.5', 6)    // 1500000n
+parseAmount('0.001', 18) // 1000000000000000n
+parseAmount('', 6)       // 0n
 ```
+
+### formatTokenValue
+
+```ts
+function formatTokenValue(raw: string | null, decimals: number): string
+```
+
+Format raw token value string to human-readable. Strips trailing zeros.
+
+```ts
+formatTokenValue('1500000', 6)                // '1.5'
+formatTokenValue('1000000000000000000', 18)    // '1'
+formatTokenValue(null, 6)                      // '0'
+```
+
+### formatDuration
+
+```ts
+function formatDuration(seconds: number | bigint): string
+```
+
+Format seconds to human-readable: `'7d 0h'`, `'1h'`, `'30m'`.
+
+### formatTimestamp
+
+```ts
+function formatTimestamp(ts: bigint): string
+```
+
+Format unix timestamp (seconds) to locale string. Returns `'--'` for `0n`.
+
+### computeStatus
+
+```ts
+function computeStatus(a: StatusInput, nowSeconds?: number): InscriptionStatus
+```
+
+Compute inscription status from on-chain fields. Resolution order:
+
+1. `is_repaid` true -> `'repaid'`
+2. `liquidated` true -> `'liquidated'`
+3. `status === 'cancelled'` -> `'cancelled'`
+4. Unsigned (`signed_at === 0`) and past deadline -> `'expired'`
+5. Unsigned -> `'open'`
+6. `issued_debt_percentage < MAX_BPS` -> `'partial'`
+7. Past `signed_at + duration` -> `'expired'`
+8. Otherwise -> `'filled'`
 
 ---
 
@@ -975,7 +253,7 @@ const sig = deserializeSignature({ r: '0xR', s: '0xS' })
 const TOKENS: TokenInfo[]
 ```
 
-Curated StarkNet token list with addresses for sepolia and mainnet. Includes:
+Curated StarkNet token list (11 tokens):
 
 | Symbol | Name | Decimals | Networks |
 |--------|------|----------|----------|
@@ -997,11 +275,7 @@ Curated StarkNet token list with addresses for sepolia and mainnet. Includes:
 function getTokensForNetwork(network: string): TokenInfo[]
 ```
 
-Get tokens available on a specific network.
-
-```ts
-const sepoliaTokens = getTokensForNetwork('sepolia')
-```
+Filter tokens available on a specific network.
 
 ### findTokenByAddress
 
@@ -1009,570 +283,458 @@ const sepoliaTokens = getTokensForNetwork('sepolia')
 function findTokenByAddress(address: string): TokenInfo | undefined
 ```
 
-Find a token by its address (searches across all networks). Handles different zero-padding and casing.
-
-```ts
-const token = findTokenByAddress('0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7')
-// { symbol: 'ETH', name: 'Ether', decimals: 18, ... }
-```
+Find a token by its address (searches all networks). Handles different zero-padding and casing.
 
 ---
 
-## Utilities
+## Math
 
-### toU256
+Pure BigInt functions mirroring the on-chain share math.
 
-```ts
-function toU256(n: bigint): [string, string]
-```
-
-Convert a `bigint` to a `[low, high]` string pair for StarkNet u256 calldata. Throws `RangeError` if the value is out of u256 range (negative or > 2^256 - 1).
+### convertToShares
 
 ```ts
-toU256(1000000n)  // ['1000000', '0']
+function convertToShares(
+  percentage: bigint,
+  totalSupply: bigint,
+  currentIssuedPercentage: bigint,
+): bigint
 ```
 
-### fromU256
+**Formula:** `percentage * (totalSupply + VIRTUAL_SHARE_OFFSET) / max(currentIssuedPercentage, 1)`
+
+### scaleByPercentage
 
 ```ts
-function fromU256(u: { low: bigint; high: bigint }): bigint
+function scaleByPercentage(value: bigint, percentage: bigint): bigint
 ```
 
-Convert a `{ low, high }` u256 object back to a `bigint`. Throws `RangeError` if low or high exceeds u128 range.
+**Formula:** `value * percentage / MAX_BPS`
+
+### sharesToPercentage
 
 ```ts
-fromU256({ low: 1000000n, high: 0n })  // 1000000n
+function sharesToPercentage(
+  shares: bigint,
+  totalSupply: bigint,
+  currentIssuedPercentage: bigint,
+): bigint
 ```
 
-### inscriptionIdToHex
+**Formula:** `shares * max(currentIssuedPercentage, 1) / (totalSupply + VIRTUAL_SHARE_OFFSET)`
+
+### calculateFeeShares
 
 ```ts
-function inscriptionIdToHex(u: { low: bigint; high: bigint }): string
+function calculateFeeShares(shares: bigint, feeBps: bigint): bigint
 ```
 
-Convert a u256 `{ low, high }` to a `0x`-prefixed 64-character hex string. Useful for database keys.
-
-```ts
-inscriptionIdToHex({ low: 1n, high: 0n })
-// '0x0000000000000000000000000000000000000000000000000000000000000001'
-```
-
-### toHex
-
-```ts
-function toHex(value: unknown): string
-```
-
-Convert any address-like value (`string`, `bigint`, `number`) to a hex string.
-
-```ts
-toHex(255n)     // '0xff'
-toHex('0x1a')   // '0x1a'
-toHex(16)       // '0x10'
-```
-
-### formatAddress
-
-```ts
-function formatAddress(address: unknown): string
-```
-
-Truncate an address for display. Pads the address and returns `0x1a2b...3c4d` format.
-
-```ts
-formatAddress('0x021e81956fccd8463342ff7e774bf6616b40e242fe0ea09a6f38735a604ea0e0')
-// '0x021e...a0e0'
-```
-
-### normalizeAddress
-
-```ts
-function normalizeAddress(address: unknown): string
-```
-
-Normalize an address to a fully-padded, checksummed hex string using starknet.js `validateAndParseAddress` and `addAddressPadding`.
-
-```ts
-normalizeAddress('0x68...')
-// '0x0000000000000000000000000000000000000000000000000000000000000068...'
-```
-
-### addressesEqual
-
-```ts
-function addressesEqual(a: unknown, b: unknown): boolean
-```
-
-Compare two addresses for equality. Handles different zero-padding and casing.
-
-```ts
-addressesEqual('0x68...', '0x0068...')  // true
-```
-
-### parseAmount
-
-```ts
-function parseAmount(humanAmount: string, decimals: number): bigint
-```
-
-Convert a human-readable amount string (e.g. `"1.5"`) to an on-chain raw value using the token's decimals.
-
-```ts
-parseAmount('1.5', 6)    // 1500000n
-parseAmount('0.001', 18) // 1000000000000000n
-parseAmount('', 6)       // 0n
-```
-
-### formatTokenValue
-
-```ts
-function formatTokenValue(raw: string | null, decimals: number): string
-```
-
-Format a raw token value string to a human-readable decimal string.
-
-```ts
-formatTokenValue('1500000', 6)    // '1.5'
-formatTokenValue('1000000000000000000', 18)  // '1'
-formatTokenValue(null, 6)         // '0'
-formatTokenValue('0', 6)          // '0'
-```
-
-### formatDuration
-
-```ts
-function formatDuration(seconds: number | bigint): string
-```
-
-Format a duration in seconds to human-readable format.
-
-```ts
-formatDuration(604800n)  // '7d 0h'
-formatDuration(3600n)    // '1h'
-formatDuration(1800n)    // '30m'
-```
-
-### formatTimestamp
-
-```ts
-function formatTimestamp(ts: bigint): string
-```
-
-Format a unix timestamp (seconds) to a locale date/time string. Returns `"--"` for timestamp `0n`.
-
-```ts
-formatTimestamp(1700000000n)  // locale-dependent date string
-formatTimestamp(0n)           // '--'
-```
-
-### computeStatus
-
-```ts
-function computeStatus(a: StatusInput, nowSeconds?: number): InscriptionStatus
-```
-
-Compute the inscription status from on-chain fields. Optionally accepts a `nowSeconds` parameter (defaults to current time).
-
-**`StatusInput`**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `signed_at` | `number \| bigint` | Yes | Timestamp when the inscription was signed |
-| `duration` | `number \| bigint` | Yes | Loan duration in seconds |
-| `issued_debt_percentage` | `number \| bigint` | Yes | Percentage of debt issued (basis points) |
-| `is_repaid` | `boolean` | Yes | Whether the loan has been repaid |
-| `liquidated` | `boolean` | Yes | Whether the loan has been liquidated |
-| `deadline` | `number \| bigint` | No | Deadline timestamp for unsigned inscriptions |
-| `status` | `string` | No | Existing status string (used to detect `"cancelled"`) |
-
-**Status resolution logic:**
-
-1. If `is_repaid` is true: `"repaid"`
-2. If `liquidated` is true: `"liquidated"`
-3. If `status` is `"cancelled"`: `"cancelled"`
-4. If unsigned (`signed_at === 0`) and past deadline: `"expired"`
-5. If unsigned: `"open"`
-6. If `issued_debt_percentage < MAX_BPS`: `"partial"`
-7. If signed and past `signed_at + duration`: `"expired"`
-8. Otherwise: `"filled"`
-
-```ts
-computeStatus({
-  signed_at: 0n,
-  duration: 604800n,
-  issued_debt_percentage: 0n,
-  is_repaid: false,
-  liquidated: false,
-  deadline: 1735689600n,
-})
-// 'open' (if deadline hasn't passed)
-```
+**Formula:** `shares * feeBps / MAX_BPS`
 
 ---
 
-## Types
+## Events
 
-### Core Types
+### SELECTORS
 
 ```ts
-/** Supported StarkNet networks */
-type Network = 'sepolia' | 'mainnet'
-
-/** Token standard types supported by the protocol */
-type AssetType = 'ERC20' | 'ERC721' | 'ERC1155' | 'ERC4626'
-
-/** Possible states of an inscription */
-type InscriptionStatus =
-  | 'open' | 'partial' | 'filled' | 'repaid'
-  | 'liquidated' | 'expired' | 'cancelled'
-
-/** A single StarkNet call */
-interface Call {
-  contractAddress: string
-  entrypoint: string
-  calldata: string[]
+const SELECTORS: {
+  InscriptionCreated: string
+  InscriptionSigned: string
+  InscriptionCancelled: string
+  InscriptionRepaid: string
+  InscriptionLiquidated: string
+  SharesRedeemed: string
+  TransferSingle: string
+  OrderSettled: string
+  OrderFilled: string
+  OrderCancelled: string
+  OrdersBulkCancelled: string
 }
 ```
 
-### Status Constants
+Pre-computed event selector hashes (11 selectors). Computed via `hash.getSelectorFromName()`.
+
+> **Note:** `PrivateSettled` and `PrivateSharesRedeemed` are NOT in `SELECTORS`. The event parser does not handle these two event types. They are defined as types (`PrivateSettledEvent`, `PrivateSharesRedeemedEvent`) and are handled by the application's indexer separately.
+
+### parseEvent
 
 ```ts
-/** All valid inscription statuses as a readonly array */
-const VALID_STATUSES: readonly InscriptionStatus[]
-// ['open', 'partial', 'filled', 'repaid', 'liquidated', 'expired', 'cancelled']
-
-/** Human-readable labels for each status */
-const STATUS_LABELS: Record<InscriptionStatus, string>
-// { open: 'Open', partial: 'Partial', filled: 'Filled', ... }
+function parseEvent(raw: RawEvent): StelaEvent | null
 ```
 
-### Inscription Types
+Parse a single raw StarkNet event into a typed `StelaEvent`. Returns `null` for unrecognized selectors.
+
+### parseEvents
 
 ```ts
-/** An asset within an inscription (matches Cairo Asset struct) */
-interface Asset {
-  asset_address: string
-  asset_type: AssetType
-  value: bigint        // Token amount (ERC20/ERC1155/ERC4626)
-  token_id: bigint     // Token ID (ERC721/ERC1155)
-}
+function parseEvents(rawEvents: RawEvent[]): StelaEvent[]
+```
 
-/** Parameters for creating a new inscription */
-interface InscriptionParams {
-  is_borrow: boolean
-  debt_assets: Asset[]
-  interest_assets: Asset[]
-  collateral_assets: Asset[]
-  duration: bigint          // Duration in seconds
-  deadline: bigint          // Deadline as unix timestamp
-  multi_lender: boolean
-}
+Parse an array of raw events, skipping unrecognized ones.
 
-/** Raw inscription data as stored on-chain */
-interface StoredInscription {
+---
+
+## Off-Chain (SNIP-12)
+
+Functions for building SNIP-12 typed data for gasless off-chain signing.
+
+All typed data uses the domain separator: `{ name: 'Stela', version: 'v1', chainId, revision: '1' }`.
+
+> **Note:** `getCancelOrderTypedData` does NOT exist in the SDK. That function is defined only in the `stela-app` repo at `src/lib/offchain.ts`.
+
+### getInscriptionOrderTypedData
+
+```ts
+function getInscriptionOrderTypedData(params: {
   borrower: string
-  lender: string
+  debtAssets: Asset[]
+  interestAssets: Asset[]
+  collateralAssets: Asset[]
+  debtCount: number
+  interestCount: number
+  collateralCount: number
   duration: bigint
   deadline: bigint
-  signed_at: bigint
-  issued_debt_percentage: bigint
-  is_repaid: boolean
-  liquidated: boolean
-  multi_lender: boolean
-  debt_asset_count: number
-  interest_asset_count: number
-  collateral_asset_count: number
-}
-
-/** Parsed inscription with computed status and ID */
-interface Inscription extends StoredInscription {
-  id: string
-  status: InscriptionStatus
-}
+  multiLender: boolean
+  nonce: bigint
+  chainId: string
+}): TypedData
 ```
 
-### API Types
+Build SNIP-12 `TypedData` for a borrower's `InscriptionOrder`.
+
+**SNIP-12 struct fields:** `borrower` (ContractAddress), `debt_hash` (felt), `interest_hash` (felt), `collateral_hash` (felt), `debt_count` (u128), `interest_count` (u128), `collateral_count` (u128), `duration` (u128), `deadline` (u128), `multi_lender` (bool), `nonce` (felt).
+
+Asset arrays are hashed with `hashAssets()` and included as felt values.
+
+### getLendOfferTypedData
 
 ```ts
-/** Row from the /api/inscriptions endpoint */
-interface InscriptionRow {
-  id: string
-  creator: string
-  borrower: string | null
-  lender: string | null
-  status: string
-  issued_debt_percentage: string
-  multi_lender: boolean
-  duration: string
-  deadline: string
-  signed_at: string | null
-  debt_asset_count: number
-  interest_asset_count: number
-  collateral_asset_count: number
-  created_at_ts: string
-  assets: AssetRow[]
-}
-
-/** Asset row from the inscription_assets table */
-interface AssetRow {
-  inscription_id: string
-  asset_role: 'debt' | 'interest' | 'collateral'
-  asset_index: number
-  asset_address: string
-  asset_type: string
-  value: string | null
-  token_id: string | null
-}
-
-/** Standard API list response envelope */
-interface ApiListResponse<T> {
-  data: T[]
-  meta: { page: number; limit: number; total: number }
-}
-
-/** Standard API detail response envelope */
-interface ApiDetailResponse<T> {
-  data: T
-}
-
-/** Treasury asset balance info */
-interface TreasuryAsset {
-  asset_address: string
-  asset_type: string
-  balance: string
-}
-
-/** ERC1155 share balance for a lender */
-interface ShareBalance {
-  inscription_id: string
-  holder: string
-  balance: string
-}
-
-/** Locker account info */
-interface LockerInfo {
-  inscription_id: string
-  locker_address: string
-  is_unlocked: boolean
-}
-
-/** Inscription event row from the API */
-interface InscriptionEventRow {
-  id: number
-  inscription_id: string
-  event_type: string
-  tx_hash: string
-  block_number: number
-  timestamp: string | null
-  data: Record<string, unknown> | null
-}
-```
-
-### Event Types
-
-```ts
-/** Raw event from StarkNet RPC */
-interface RawEvent {
-  keys: string[]
-  data: string[]
-  transaction_hash: string
-  block_number: number
-}
-
-/** Discriminated union of all Stela protocol events */
-type StelaEvent =
-  | InscriptionCreatedEvent
-  | InscriptionSignedEvent
-  | InscriptionCancelledEvent
-  | InscriptionRepaidEvent
-  | InscriptionLiquidatedEvent
-  | SharesRedeemedEvent
-  | TransferSingleEvent
-  | OrderSettledEvent
-  | OrderFilledEvent
-  | OrderCancelledEvent
-  | OrdersBulkCancelledEvent
-
-interface InscriptionCreatedEvent {
-  type: 'InscriptionCreated'
-  inscription_id: bigint
-  creator: string
-  is_borrow: boolean
-  transaction_hash: string
-  block_number: number
-}
-
-interface InscriptionSignedEvent {
-  type: 'InscriptionSigned'
-  inscription_id: bigint
-  borrower: string
+function getLendOfferTypedData(params: {
+  orderHash: string
   lender: string
-  issued_debt_percentage: bigint
-  shares_minted: bigint
-  transaction_hash: string
-  block_number: number
-}
-
-interface InscriptionCancelledEvent {
-  type: 'InscriptionCancelled'
-  inscription_id: bigint
-  creator: string
-  transaction_hash: string
-  block_number: number
-}
-
-interface InscriptionRepaidEvent {
-  type: 'InscriptionRepaid'
-  inscription_id: bigint
-  repayer: string
-  transaction_hash: string
-  block_number: number
-}
-
-interface InscriptionLiquidatedEvent {
-  type: 'InscriptionLiquidated'
-  inscription_id: bigint
-  liquidator: string
-  transaction_hash: string
-  block_number: number
-}
-
-interface SharesRedeemedEvent {
-  type: 'SharesRedeemed'
-  inscription_id: bigint
-  redeemer: string
-  shares: bigint
-  transaction_hash: string
-  block_number: number
-}
-
-interface TransferSingleEvent {
-  type: 'TransferSingle'
-  operator: string
-  from: string
-  to: string
-  id: bigint
-  value: bigint
-  transaction_hash: string
-  block_number: number
-}
-
-interface OrderSettledEvent {
-  type: 'OrderSettled'
-  inscription_id: bigint
-  borrower: string
-  lender: string
-  relayer: string
-  relayer_fee_amount: bigint
-  transaction_hash: string
-  block_number: number
-}
-
-interface OrderFilledEvent {
-  type: 'OrderFilled'
-  inscription_id: bigint
-  order_hash: string
-  taker: string
-  fill_bps: bigint
-  total_filled_bps: bigint
-  transaction_hash: string
-  block_number: number
-}
-
-interface OrderCancelledEvent {
-  type: 'OrderCancelled'
-  order_hash: string
-  maker: string
-  transaction_hash: string
-  block_number: number
-}
-
-interface OrdersBulkCancelledEvent {
-  type: 'OrdersBulkCancelled'
-  maker: string
-  new_min_nonce: string
-  transaction_hash: string
-  block_number: number
-}
+  issuedDebtPercentage: bigint
+  nonce: bigint
+  chainId: string
+  lenderCommitment?: string   // default '0' (non-private)
+}): TypedData
 ```
 
-### Locker Types
+Build SNIP-12 `TypedData` for a lender's `LendOffer`.
+
+**SNIP-12 struct fields:** `order_hash` (felt), `lender` (ContractAddress), `issued_debt_percentage` (u256), `nonce` (felt), `lender_commitment` (felt).
+
+When `lenderCommitment` is non-zero, the settlement is private: shares go to the privacy pool Merkle tree instead of minting ERC1155.
+
+### getPrivateLendOfferTypedData
 
 ```ts
-/** State of a locker account */
-interface LockerState {
-  address: string
-  isUnlocked: boolean
-}
-
-/** A call to be executed through the locker account (extends Call) */
-interface LockerCall extends Call {}
+function getPrivateLendOfferTypedData(params: {
+  orderHash: string
+  issuedDebtPercentage: bigint
+  nonce: bigint
+  chainId: string
+  depositCommitment: string
+}): TypedData
 ```
 
-### Token Types
+Convenience wrapper: calls `getLendOfferTypedData` with `lender='0x0'` and `lenderCommitment=depositCommitment`. Used for anonymous private settlements.
+
+### hashAssets
 
 ```ts
-/** Token information from the registry */
-interface TokenInfo {
-  symbol: string
-  name: string
-  decimals: number
-  addresses: Partial<Record<Network, string>>
-  logoUrl?: string
-}
+function hashAssets(assets: Asset[]): string
 ```
 
-### Offchain Types
+Poseidon hash matching Cairo `hash_assets()`. Hashes: `[length, addr, type_enum, value_low, value_high, token_id_low, token_id_high, ...]`.
+
+### serializeSignature
 
 ```ts
-/** Serialized signature for database storage */
-interface StoredSignature {
-  r: string
-  s: string
-}
+function serializeSignature(sig: string[]): StoredSignature
 ```
 
-### Client Option Types
+Convert `[r, s]` to `{ r, s }` for database storage.
+
+### deserializeSignature
 
 ```ts
-interface InscriptionClientOptions {
-  stelaAddress: string
-  provider: RpcProvider
-  account?: Account
-}
+function deserializeSignature(stored: StoredSignature): string[]
+```
 
-interface ShareClientOptions {
-  stelaAddress: string
-  provider: RpcProvider
-}
+Convert `{ r, s }` back to `[r, s]` for on-chain use.
 
-interface ApiClientOptions {
-  baseUrl?: string
-}
+---
 
-interface StelaSdkOptions {
-  provider: RpcProvider
-  account?: Account
-  network?: Network | string
-  apiBaseUrl?: string
-  stelaAddress?: string
-}
+## Privacy
 
-interface ListInscriptionsParams {
-  status?: string
-  address?: string
-  page?: number
-  limit?: number
-}
+All privacy functions use Poseidon hashing via starknet.js and match the Cairo implementations in `stela-privacy`.
 
-/** Input shape for computeStatus */
-interface StatusInput {
-  signed_at: number | bigint
-  duration: number | bigint
-  issued_debt_percentage: number | bigint
-  is_repaid: boolean
-  liquidated: boolean
-  deadline?: number | bigint
-  status?: string
+### computeCommitment
+
+```ts
+function computeCommitment(
+  owner: string,
+  inscriptionId: bigint,
+  shares: bigint,
+  salt: string,            // NOTE: string type
+): string
+```
+
+**Formula:** `Poseidon(STELA_COMMITMENT_V1, owner, id_low, id_high, shares_low, shares_high, salt)`
+
+Domain separator `STELA_COMMITMENT_V1` is encoded as a StarkNet short string.
+
+### computeDepositCommitment
+
+```ts
+function computeDepositCommitment(
+  depositor: string,
+  token: string,
+  amount: bigint,
+  salt: bigint,            // NOTE: bigint type (inconsistent with computeCommitment's string)
+): string
+```
+
+**Formula:** `Poseidon(STELA_COMMITMENT_V1, depositor, token, amount_low, amount_high, salt_hex)`
+
+> **Accuracy note:** `salt` is `bigint` here but `string` in `computeCommitment`. This is an inconsistency in the SDK.
+
+### computeNullifier
+
+```ts
+function computeNullifier(commitment: string, ownerSecret: string): string
+```
+
+**Formula:** `Poseidon(STELA_NULLIFIER_V1, commitment, ownerSecret)`
+
+Domain separator `STELA_NULLIFIER_V1` is encoded as a StarkNet short string.
+
+### hashPair
+
+```ts
+function hashPair(left: string, right: string): string
+```
+
+**Formula:** `Poseidon(left, right)`
+
+For Merkle tree internal nodes. **Order-dependent** (not commutative).
+
+### generateSalt
+
+```ts
+function generateSalt(): string
+```
+
+Generate 31 random bytes via `crypto.getRandomValues()`, returned as a hex-encoded felt252 (always < field prime).
+
+### createPrivateNote
+
+```ts
+function createPrivateNote(
+  owner: string,
+  inscriptionId: bigint,
+  shares: bigint,
+  salt?: string,
+): PrivateNote
+```
+
+Create a full `PrivateNote`: generates a random salt if not provided, computes the commitment, returns the complete note object.
+
+---
+
+## Client Classes
+
+### StelaSdk
+
+```ts
+class StelaSdk {
+  readonly inscriptions: InscriptionClient
+  readonly shares: ShareClient
+  readonly locker: LockerClient
+  readonly api: ApiClient
+  readonly network: Network
+  readonly stelaAddress: string
+  constructor(opts: StelaSdkOptions)
 }
 ```
+
+Main facade. See [ARCHITECTURE.md](./ARCHITECTURE.md) for composition details.
+
+---
+
+### InscriptionClient
+
+```ts
+new InscriptionClient({ stelaAddress: string, provider: RpcProvider, account?: Account })
+```
+
+#### Read Methods
+
+| Method | Signature | Returns |
+|--------|-----------|---------|
+| `getInscription` | `(inscriptionId: bigint)` | `Promise<StoredInscription>` |
+| `getLocker` | `(inscriptionId: bigint)` | `Promise<string>` (locker address) |
+| `getInscriptionFee` | `()` | `Promise<bigint>` (protocol fee in BPS, applied to lender shares on sign/settle) |
+| `convertToShares` | `(inscriptionId: bigint, percentage: bigint)` | `Promise<bigint>` |
+| `getNonce` | `(address: string)` | `Promise<bigint>` |
+| `getRelayerFee` | `()` | `Promise<bigint>` |
+| `getTreasury` | `()` | `Promise<string>` |
+| `isPaused` | `()` | `Promise<boolean>` |
+| `isOrderRegistered` | `(orderHash: string)` | `Promise<boolean>` |
+| `isOrderCancelled` | `(orderHash: string)` | `Promise<boolean>` |
+| `getFilledBps` | `(orderHash: string)` | `Promise<bigint>` |
+| `getMakerMinNonce` | `(maker: string)` | `Promise<string>` |
+
+#### Call Builders
+
+All return `Call` objects synchronously without executing.
+
+| Method | Signature |
+|--------|-----------|
+| `buildCreateInscription` | `(params: InscriptionParams): Call` |
+| `buildSignInscription` | `(inscriptionId: bigint, bps: bigint): Call` |
+| `buildCancelInscription` | `(inscriptionId: bigint): Call` |
+| `buildRepay` | `(inscriptionId: bigint): Call` |
+| `buildLiquidate` | `(inscriptionId: bigint): Call` |
+| `buildRedeem` | `(inscriptionId: bigint, shares: bigint): Call` |
+| `buildPrivateRedeem` | `(request: PrivateRedeemRequest, proof: string[]): Call` |
+| `buildShieldDeposit` | `(params: { privacyPoolAddress, token, amount, commitment }): Call` |
+| `buildSettlePrivate` | `(params): Call` -- forces lender to `'0x0'`, delegates to `buildSettle` |
+| `buildSettle` | `(params): Call` -- see below |
+| `buildFillSignedOrder` | `(order: SignedOrder, signature: string[], fillBps: bigint): Call` |
+| `buildCancelOrder` | `(order: SignedOrder): Call` |
+| `buildCancelOrdersByNonce` | `(minNonce: string): Call` |
+
+**`buildSettle` params:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `order.borrower` | `string` | Borrower address |
+| `order.debtHash` | `string` | Poseidon hash of debt assets |
+| `order.interestHash` | `string` | Poseidon hash of interest assets |
+| `order.collateralHash` | `string` | Poseidon hash of collateral assets |
+| `order.debtCount` | `number` | Number of debt assets |
+| `order.interestCount` | `number` | Number of interest assets |
+| `order.collateralCount` | `number` | Number of collateral assets |
+| `order.duration` | `bigint` | Loan duration in seconds |
+| `order.deadline` | `bigint` | Order deadline as unix timestamp |
+| `order.multiLender` | `boolean` | Whether multiple lenders can fill |
+| `order.nonce` | `bigint` | Borrower's nonce |
+| `debtAssets` | `Asset[]` | Full debt asset array |
+| `interestAssets` | `Asset[]` | Full interest asset array |
+| `collateralAssets` | `Asset[]` | Full collateral asset array |
+| `borrowerSig` | `string[]` | Borrower's SNIP-12 signature `[r, s]` |
+| `offer.orderHash` | `string` | Hash of the order being accepted |
+| `offer.lender` | `string` | Lender address |
+| `offer.issuedDebtPercentage` | `bigint` | Percentage being filled (BPS) |
+| `offer.nonce` | `bigint` | Lender's nonce |
+| `offer.lenderCommitment` | `string?` | Privacy commitment. Non-zero = private settlement. Default `'0'`. |
+| `lenderSig` | `string[]` | Lender's SNIP-12 signature `[r, s]` |
+
+**`buildSettlePrivate` params:** Same as `buildSettle` but `offer` does not have `lender` (forced to `'0x0'`). `offer.lenderCommitment` is required.
+
+#### Execute Methods
+
+All require `account` in constructor. All return `Promise<{ transaction_hash: string }>`.
+
+| Method | Signature |
+|--------|-----------|
+| `execute` | `(calls: Call[])` |
+| `createInscription` | `(params: InscriptionParams, approvals?: Call[])` |
+| `signInscription` | `(inscriptionId: bigint, bps: bigint, approvals?: Call[])` |
+| `cancelInscription` | `(inscriptionId: bigint)` |
+| `repay` | `(inscriptionId: bigint, approvals?: Call[])` |
+| `liquidate` | `(inscriptionId: bigint)` |
+| `redeem` | `(inscriptionId: bigint, shares: bigint)` |
+| `privateRedeem` | `(request: PrivateRedeemRequest, proof: string[])` |
+| `fillSignedOrder` | `(order: SignedOrder, signature: string[], fillBps: bigint, approvals?: Call[])` |
+| `cancelOrder` | `(order: SignedOrder)` |
+| `cancelOrdersByNonce` | `(minNonce: string)` |
+
+---
+
+### ShareClient
+
+```ts
+new ShareClient({ stelaAddress: string, provider: RpcProvider })
+```
+
+Read-only ERC1155 share balance queries.
+
+| Method | Signature | Returns |
+|--------|-----------|---------|
+| `balanceOf` | `(account: string, inscriptionId: bigint)` | `Promise<bigint>` |
+| `balanceOfBatch` | `(accounts: string[], inscriptionIds: bigint[])` | `Promise<bigint[]>` |
+| `isApprovedForAll` | `(owner: string, operator: string)` | `Promise<boolean>` |
+
+---
+
+### LockerClient
+
+```ts
+new LockerClient(stelaContract: Contract, provider: RpcProvider, account?: Account)
+```
+
+Constructed internally by `StelaSdk`. Accesses collateral locker TBAs (Token Bound Accounts).
+
+| Method | Signature | Returns |
+|--------|-----------|---------|
+| `getLockerAddress` | `(inscriptionId: bigint)` | `Promise<string>` |
+| `isUnlocked` | `(inscriptionId: bigint)` | `Promise<boolean>` |
+| `getLockerState` | `(inscriptionId: bigint)` | `Promise<LockerState>` |
+| `getLockerBalance` | `(inscriptionId: bigint, tokenAddress: string)` | `Promise<bigint>` |
+| `getLockerBalances` | `(inscriptionId: bigint, tokenAddresses: string[])` | `Promise<Map<string, bigint>>` |
+| `buildLockerExecute` | `(lockerAddress: string, innerCalls: Call[])` | `Call` |
+| `executeThrough` | `(inscriptionId: bigint, innerCall: Call)` | `Promise<{ transaction_hash }>` |
+| `executeThroughBatch` | `(inscriptionId: bigint, innerCalls: Call[])` | `Promise<{ transaction_hash }>` |
+
+---
+
+### ApiClient
+
+```ts
+new ApiClient({ baseUrl?: string })
+```
+
+Default base URL: `https://stela-dapp.xyz/api`
+
+| Method | Signature | Returns |
+|--------|-----------|---------|
+| `listInscriptions` | `(params?: ListInscriptionsParams)` | `Promise<ApiListResponse<InscriptionRow>>` |
+| `getInscription` | `(id: string)` | `Promise<ApiDetailResponse<InscriptionRow>>` |
+| `getInscriptionEvents` | `(id: string)` | `Promise<ApiListResponse<InscriptionEventRow>>` |
+| `getTreasuryView` | `(address: string)` | `Promise<ApiListResponse<TreasuryAsset>>` |
+| `getLockers` | `(address: string)` | `Promise<ApiListResponse<LockerInfo>>` |
+| `getShareBalances` | `(address: string)` | `Promise<ApiListResponse<ShareBalance>>` |
+
+---
+
+### ApiError
+
+```ts
+class ApiError extends Error {
+  readonly status: number
+  readonly url: string
+  readonly name: string  // always 'ApiError'
+}
+```
+
+Thrown by `ApiClient` when an HTTP request returns a non-OK status.
+
+---
+
+## Accuracy Notes
+
+These are known inconsistencies and edge cases documented for transparency:
+
+1. **SELECTORS missing privacy events:** `PrivateSettled` and `PrivateSharesRedeemed` event selectors are not in the `SELECTORS` object. The `parseEvent()` function cannot parse these events. They are handled by the application's indexer directly.
+
+2. **Salt type inconsistency:** `computeCommitment()` takes `salt` as `string`, while `computeDepositCommitment()` takes `salt` as `bigint`. Both produce hex strings internally.
+
+3. **Mainnet address is placeholder:** `STELA_ADDRESS.mainnet` is `'0x0'`. The protocol is not yet deployed to mainnet.
+
+4. **getCancelOrderTypedData is app-only:** This function does NOT exist in the SDK. It is defined only in the `stela-app` repo at `src/lib/offchain.ts`. The SDK's offchain module exports `getInscriptionOrderTypedData`, `getLendOfferTypedData`, and `getPrivateLendOfferTypedData`.
+
+5. **getLockerBalances makes sequential RPC calls:** One `balance_of` call per token address, not batched. May be slow for many tokens.

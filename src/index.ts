@@ -85,6 +85,7 @@ export { parseEvent, parseEvents } from './events/index.js'
 export {
   getInscriptionOrderTypedData,
   getLendOfferTypedData,
+  getPrivateLendOfferTypedData,
   hashAssets,
   serializeSignature,
   deserializeSignature,
@@ -96,6 +97,7 @@ export type { StoredSignature } from './offchain/index.js'
 export type { PrivateNote, PrivateRedeemRequest } from './privacy/index.js'
 export {
   computeCommitment,
+  computeDepositCommitment,
   computeNullifier,
   hashPair,
   generateSalt,

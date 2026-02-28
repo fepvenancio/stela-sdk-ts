@@ -257,6 +257,93 @@ const sigArray = deserializeSignature(stored)  // [r, s]
 
 ---
 
+## Privacy Pool Operations
+
+The SDK includes a full privacy module for working with Stela's privacy pool. Private lenders can commit shares to a Merkle tree instead of receiving ERC1155 tokens, then later redeem them anonymously.
+
+### Creating a Private Note
+
+```ts
+import {
+  createPrivateNote,
+  computeCommitment,
+  computeNullifier,
+  computeDepositCommitment,
+  generateSalt,
+} from '@fepvenancio/stela-sdk'
+
+// Create a private note (auto-generates salt)
+const note = createPrivateNote('0xOWNER', 1n, 1000n)
+// { owner, inscriptionId, shares, salt, commitment }
+
+// Store this note securely -- it's needed for future redemption
+console.log('commitment:', note.commitment)
+console.log('salt:', note.salt)  // KEEP SECRET
+
+// Derive a nullifier for redemption
+const nullifier = computeNullifier(note.commitment, '0xOWNER_SECRET')
+```
+
+### Deposit Commitment for Shielding
+
+```ts
+// Compute a deposit commitment for shield() call
+const depositCommitment = computeDepositCommitment(
+  '0xDEPOSITOR',
+  '0xTOKEN',
+  1000000n,
+  12345n,  // secret salt
+)
+
+// Build the shield transaction
+const shieldCall = sdk.inscriptions.buildShieldDeposit({
+  privacyPoolAddress: '0xPRIVACY_POOL',
+  token: '0xTOKEN',
+  amount: 1000000n,
+  commitment: depositCommitment,
+})
+```
+
+### Private Settlement
+
+```ts
+import { getPrivateLendOfferTypedData } from '@fepvenancio/stela-sdk'
+
+// Build typed data for a private lend offer (lender = 0x0)
+const typedData = getPrivateLendOfferTypedData({
+  orderHash: '0xORDER_HASH',
+  issuedDebtPercentage: 10000n,
+  nonce: 0n,
+  chainId: 'SN_SEPOLIA',
+  depositCommitment: '0xDEPOSIT_COMMITMENT',
+})
+
+// Sign with the borrower's account (the lender is anonymous)
+const signature = await account.signMessage(typedData)
+```
+
+### Private Redemption
+
+```ts
+import type { PrivateRedeemRequest } from '@fepvenancio/stela-sdk'
+
+const request: PrivateRedeemRequest = {
+  root: '0xMERKLE_ROOT',
+  inscriptionId: 1n,
+  shares: 1000n,
+  nullifier: '0xNULLIFIER',
+  changeCommitment: '0x0',  // full redemption
+  recipient: '0xRECIPIENT',
+}
+
+const { transaction_hash } = await sdk.inscriptions.privateRedeem(
+  request,
+  merkleProof,  // string[]
+)
+```
+
+---
+
 ## Event Parsing
 
 ```ts

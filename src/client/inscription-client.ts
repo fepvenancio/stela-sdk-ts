@@ -49,7 +49,7 @@ export class InscriptionClient {
   }
 
   async getNonce(address: string): Promise<bigint> {
-    const result = await this.contract.call('nonces', [address])
+    const result = await this.contract.call('nonces', [address], { blockIdentifier: 'latest' })
     return BigInt(String((result as unknown[])[0] ?? '0'))
   }
 
@@ -84,7 +84,7 @@ export class InscriptionClient {
   }
 
   async getMakerMinNonce(maker: string): Promise<string> {
-    const result = await this.contract.call('get_maker_min_nonce', [maker])
+    const result = await this.contract.call('get_maker_min_nonce', [maker], { blockIdentifier: 'latest' })
     return String((result as unknown[])[0] ?? '0')
   }
 
@@ -157,6 +157,71 @@ export class InscriptionClient {
       ...proof,
     ]
     return { contractAddress: this.address, entrypoint: 'private_redeem', calldata }
+  }
+
+  /**
+   * Build a shield() call on the privacy pool contract.
+   * The depositor shields tokens into the pool, creating a commitment that can
+   * later be consumed during private settlement.
+   */
+  buildShieldDeposit(params: {
+    privacyPoolAddress: string
+    token: string
+    amount: bigint
+    commitment: string
+  }): Call {
+    return {
+      contractAddress: params.privacyPoolAddress,
+      entrypoint: 'shield',
+      calldata: [
+        params.token,
+        ...toU256(params.amount),
+        params.commitment,
+      ],
+    }
+  }
+
+  /**
+   * Build a settle() call for private settlement.
+   *
+   * In a private settlement, the lender is zero address and the lender_commitment
+   * is the deposit commitment from the privacy pool. The contract skips lender
+   * signature verification and instead consumes the deposit from the privacy pool.
+   */
+  buildSettlePrivate(params: {
+    order: {
+      borrower: string
+      debtHash: string
+      interestHash: string
+      collateralHash: string
+      debtCount: number
+      interestCount: number
+      collateralCount: number
+      duration: bigint
+      deadline: bigint
+      multiLender: boolean
+      nonce: bigint
+    }
+    debtAssets: Asset[]
+    interestAssets: Asset[]
+    collateralAssets: Asset[]
+    borrowerSig: string[]
+    offer: {
+      orderHash: string
+      issuedDebtPercentage: bigint
+      nonce: bigint
+      /** The deposit commitment from the privacy pool. */
+      lenderCommitment: string
+    }
+    lenderSig: string[]
+  }): Call {
+    return this.buildSettle({
+      ...params,
+      offer: {
+        ...params.offer,
+        lender: '0x0',
+      },
+    })
   }
 
   buildSettle(params: {
