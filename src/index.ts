@@ -45,6 +45,8 @@ export {
   VIRTUAL_SHARE_OFFSET,
   ASSET_TYPE_ENUM,
   ASSET_TYPE_NAMES,
+  CHAIN_ID,
+  EXPLORER_TX_URL,
 } from './constants/index.js'
 
 // ── Utilities ─────────────────────────────────────────────────────────
