@@ -48,13 +48,14 @@ export class LockerClient {
   /** Read multiple ERC20 balances held by a locker */
   async getLockerBalances(inscriptionId: bigint, tokenAddresses: string[]): Promise<Map<string, bigint>> {
     const lockerAddress = await this.getLockerAddress(inscriptionId)
-    const balances = new Map<string, bigint>()
-    for (const addr of tokenAddresses) {
-      const token = new Contract(erc20Abi, addr, this.provider)
-      const result = await token.call('balance_of', [lockerAddress])
-      balances.set(addr, BigInt((result as unknown[])[0] as string | bigint))
-    }
-    return balances
+    const results = await Promise.all(
+      tokenAddresses.map(async (addr) => {
+        const token = new Contract(erc20Abi, addr, this.provider)
+        const result = await token.call('balance_of', [lockerAddress])
+        return [addr, BigInt((result as unknown[])[0] as string | bigint)] as const
+      }),
+    )
+    return new Map<string, bigint>(results)
   }
 
   // ---- Governance execution through Locker ----

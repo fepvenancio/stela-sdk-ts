@@ -128,3 +128,33 @@ The SDK uses starknet.js v6 for:
 - `shortString.encodeShortString` for domain separator encoding
 
 No other runtime dependencies exist.
+
+---
+
+## Genesis NFT & FeeVault System
+
+The protocol includes a Genesis NFT (ERC721, 500 supply) whose holders earn protocol fees via a FeeVault contract. The SDK does not yet include Genesis/FeeVault client code, but the contracts emit events that indexers should handle:
+
+### Contract Events (not yet in SDK selectors)
+
+| Event | Contract | Fields |
+|-------|----------|--------|
+| `Minted` | StelaGenesis | `token_id` (key), `minter` (key), `price` |
+| `Deposited` | FeeVault | `token` (key), `amount`, `per_nft` |
+| `Claimed` | FeeVault | `token_id` (key), `token` (key), `amount`, `recipient` |
+| `TokenRegistered` | FeeVault | `token` (key), `index` |
+
+### Fee Structure (enforced in stela.cairo)
+
+- **SETTLE:** 25 BPS total (5 relayer + 15 genesis vault + 5 treasury)
+- **REDEEM:** 10 BPS total (all to genesis vault)
+- **LIQUIDATE:** no extra fee
+- When `fee_vault == zero_address`, no Genesis fees are taken (backwards compatible)
+
+### FeeVault Interaction Pattern
+
+The Stela contract calls `FeeVault.deposit(token, amount)` internally during settle and redeem. NFT holders call `claim(token_id)` or `claim_batch(token_ids)` directly on the FeeVault to withdraw accumulated fees. The vault uses a cumulative sum pattern -- each deposit increments a per-token counter by `amount / 500`, and claims compute the delta since last claim.
+
+### Genesis NFT Mint Interaction
+
+The StelaGenesis contract accepts STRK (ERC20) payment at 5,000 STRK per NFT. Callers must approve the Genesis contract for `mint_price` before calling `mint()` or `mint_batch(quantity)`. Sequential IDs 1-500.
