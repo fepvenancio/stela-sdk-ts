@@ -418,6 +418,10 @@ pnpm build
 npm publish --access public
 ```
 
+## Running a Relayer
+
+The Stela protocol is fully permissionless — anyone can run a relayer to settle matched orders and earn **5 BPS** on every settlement. See [RELAYER.md](RELAYER.md) for the SDK integration guide and the [stela-relayer](https://github.com/fepvenancio/stela-relayer) repo for a standalone implementation.
+
 ## License
 
 MIT
