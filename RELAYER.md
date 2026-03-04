@@ -6,11 +6,13 @@ Stela is a permissionless P2P lending protocol on StarkNet. Anyone can run a **r
 
 ## Fee Economics
 
-| Event | Total Fee | Relayer | Genesis Vault | Treasury |
-|-------|-----------|---------|---------------|----------|
-| Settlement | 25 BPS (0.25%) | **5 BPS** | 15 BPS | 5 BPS |
-| Redemption | 10 BPS (0.10%) | 0 BPS | 7 BPS | 3 BPS |
-| Liquidation | 0 BPS | 0 BPS | 0 BPS | 0 BPS |
+Treasury is set to the FeeVault — no individual receives protocol revenue. 100% of non-relayer fees go to Genesis NFT holders.
+
+| Event | Total Fee | Relayer | Genesis Vault |
+|-------|-----------|---------|---------------|
+| Settlement | 25 BPS (0.25%) | **5 BPS** | 20 BPS |
+| Redemption | 10 BPS (0.10%) | 0 BPS | 10 BPS |
+| Liquidation | 0 BPS | 0 BPS | 0 BPS |
 
 For a 10,000 USDC loan, the relayer earns **5 USDC** per settlement.
 
