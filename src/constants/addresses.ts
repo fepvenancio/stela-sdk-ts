@@ -2,7 +2,7 @@ import type { Network } from '../types/common.js'
 
 /** Deployed Stela protocol contract addresses per network */
 export const STELA_ADDRESS: Record<Network, string> = {
-  sepolia: '0x042e955a1905261e7afdba17518506c8f275759e1195bc19e2eca908658bf8e9',
+  sepolia: '0x042f27b5cf82781d8fffd7daeec9184ac4f14c9e86e87b880bd81ef5197345ed',
   mainnet: '0x0',
 } as const
 

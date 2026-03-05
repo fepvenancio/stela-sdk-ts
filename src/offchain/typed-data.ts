@@ -72,36 +72,8 @@ export function getInscriptionOrderTypedData(params: {
 }
 
 /**
- * Build SNIP-12 TypedData for a private lend offer.
- *
- * Convenience wrapper around getLendOfferTypedData that sets lender to zero address
- * and includes the deposit commitment. For private settlements, the lender is anonymous
- * — the privacy pool's deposit commitment proves ownership instead.
- */
-export function getPrivateLendOfferTypedData(params: {
-  orderHash: string
-  issuedDebtPercentage: bigint
-  nonce: bigint
-  chainId: string
-  /** The deposit commitment from the privacy pool shield() call. */
-  depositCommitment: string
-}): TypedData {
-  return getLendOfferTypedData({
-    orderHash: params.orderHash,
-    lender: '0x0',
-    issuedDebtPercentage: params.issuedDebtPercentage,
-    nonce: params.nonce,
-    chainId: params.chainId,
-    lenderCommitment: params.depositCommitment,
-  })
-}
-
-/**
  * Build SNIP-12 TypedData for a lender's LendOffer.
  * The lender signs this off-chain to accept an order without gas.
- *
- * @param lenderCommitment - Privacy commitment. When non-zero, shares are committed to the
- *   privacy pool's Merkle tree instead of minting ERC1155 to the lender. Defaults to '0'.
  */
 export function getLendOfferTypedData(params: {
   orderHash: string
@@ -109,8 +81,6 @@ export function getLendOfferTypedData(params: {
   issuedDebtPercentage: bigint
   nonce: bigint
   chainId: string
-  /** Privacy commitment (default '0' = non-private). */
-  lenderCommitment?: string
 }): TypedData {
   return {
     types: {
@@ -125,7 +95,6 @@ export function getLendOfferTypedData(params: {
         { name: 'lender', type: 'ContractAddress' },
         { name: 'issued_debt_percentage', type: 'u256' },
         { name: 'nonce', type: 'felt' },
-        { name: 'lender_commitment', type: 'felt' },
       ],
       u256: [
         { name: 'low', type: 'u128' },
@@ -145,7 +114,6 @@ export function getLendOfferTypedData(params: {
         high: (params.issuedDebtPercentage >> 128n).toString(),
       },
       nonce: params.nonce.toString(),
-      lender_commitment: params.lenderCommitment ?? '0',
     },
   }
 }

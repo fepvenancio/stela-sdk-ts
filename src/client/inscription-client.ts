@@ -1,7 +1,6 @@
 import { Contract, type RpcProvider, type Account } from 'starknet'
 import type { Call } from '../types/common.js'
 import type { Asset, InscriptionParams, StoredInscription, SignedOrder } from '../types/inscription.js'
-import type { PrivateRedeemRequest } from '../privacy/types.js'
 import stelaAbi from '../abi/stela.json'
 import { toU256, fromU256 } from '../utils/u256.js'
 import { ASSET_TYPE_ENUM } from '../constants/protocol.js'
@@ -143,87 +142,6 @@ export class InscriptionClient {
     }
   }
 
-  buildPrivateRedeem(request: PrivateRedeemRequest, proof: string[]): Call {
-    const calldata: string[] = [
-      // PrivateRedeemRequest struct fields (must match Cairo Serde order)
-      request.root,
-      ...toU256(request.inscriptionId),
-      ...toU256(request.shares),
-      request.nullifier,
-      request.changeCommitment,
-      request.recipient,
-      // proof array
-      String(proof.length),
-      ...proof,
-    ]
-    return { contractAddress: this.address, entrypoint: 'private_redeem', calldata }
-  }
-
-  /**
-   * Build a shield() call on the privacy pool contract.
-   * The depositor shields tokens into the pool, creating a commitment that can
-   * later be consumed during private settlement.
-   */
-  buildShieldDeposit(params: {
-    privacyPoolAddress: string
-    token: string
-    amount: bigint
-    commitment: string
-  }): Call {
-    return {
-      contractAddress: params.privacyPoolAddress,
-      entrypoint: 'shield',
-      calldata: [
-        params.token,
-        ...toU256(params.amount),
-        params.commitment,
-      ],
-    }
-  }
-
-  /**
-   * Build a settle() call for private settlement.
-   *
-   * In a private settlement, the lender is zero address and the lender_commitment
-   * is the deposit commitment from the privacy pool. The contract skips lender
-   * signature verification and instead consumes the deposit from the privacy pool.
-   */
-  buildSettlePrivate(params: {
-    order: {
-      borrower: string
-      debtHash: string
-      interestHash: string
-      collateralHash: string
-      debtCount: number
-      interestCount: number
-      collateralCount: number
-      duration: bigint
-      deadline: bigint
-      multiLender: boolean
-      nonce: bigint
-    }
-    debtAssets: Asset[]
-    interestAssets: Asset[]
-    collateralAssets: Asset[]
-    borrowerSig: string[]
-    offer: {
-      orderHash: string
-      issuedDebtPercentage: bigint
-      nonce: bigint
-      /** The deposit commitment from the privacy pool. */
-      lenderCommitment: string
-    }
-    lenderSig: string[]
-  }): Call {
-    return this.buildSettle({
-      ...params,
-      offer: {
-        ...params.offer,
-        lender: '0x0',
-      },
-    })
-  }
-
   buildSettle(params: {
     order: {
       borrower: string
@@ -247,8 +165,6 @@ export class InscriptionClient {
       lender: string
       issuedDebtPercentage: bigint
       nonce: bigint
-      /** Privacy commitment. When non-zero, shares go to privacy pool. Default '0'. */
-      lenderCommitment?: string
     }
     lenderSig: string[]
   }): Call {
@@ -279,7 +195,6 @@ export class InscriptionClient {
       params.offer.lender,
       ...toU256(params.offer.issuedDebtPercentage),
       params.offer.nonce.toString(),
-      params.offer.lenderCommitment ?? '0',
       // lender_sig array
       String(params.lenderSig.length),
       ...params.lenderSig,
@@ -364,10 +279,6 @@ export class InscriptionClient {
 
   async redeem(inscriptionId: bigint, shares: bigint): Promise<{ transaction_hash: string }> {
     return this.execute([this.buildRedeem(inscriptionId, shares)])
-  }
-
-  async privateRedeem(request: PrivateRedeemRequest, proof: string[]): Promise<{ transaction_hash: string }> {
-    return this.execute([this.buildPrivateRedeem(request, proof)])
   }
 
   async fillSignedOrder(order: SignedOrder, signature: string[], fillBps: bigint, approvals?: Call[]): Promise<{ transaction_hash: string }> {

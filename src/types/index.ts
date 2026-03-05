@@ -41,8 +41,6 @@ export type {
   OrderFilledEvent,
   OrderCancelledEvent,
   OrdersBulkCancelledEvent,
-  PrivateSettledEvent,
-  PrivateSharesRedeemedEvent,
   StelaEvent,
 } from './events.js'
 

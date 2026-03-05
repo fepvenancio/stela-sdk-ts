@@ -28,8 +28,6 @@ export type {
   OrderFilledEvent,
   OrderCancelledEvent,
   OrdersBulkCancelledEvent,
-  PrivateSettledEvent,
-  PrivateSharesRedeemedEvent,
   StelaEvent,
   LockerState,
   LockerCall,
@@ -87,24 +85,12 @@ export { parseEvent, parseEvents } from './events/index.js'
 export {
   getInscriptionOrderTypedData,
   getLendOfferTypedData,
-  getPrivateLendOfferTypedData,
   hashAssets,
   serializeSignature,
   deserializeSignature,
 } from './offchain/index.js'
 
 export type { StoredSignature } from './offchain/index.js'
-
-// ── Privacy ─────────────────────────────────────────────────
-export type { PrivateNote, PrivateRedeemRequest } from './privacy/index.js'
-export {
-  computeCommitment,
-  computeDepositCommitment,
-  computeNullifier,
-  hashPair,
-  generateSalt,
-  createPrivateNote,
-} from './privacy/index.js'
 
 // ── Clients ──────────────────────────────────────────────────────────
 export {
