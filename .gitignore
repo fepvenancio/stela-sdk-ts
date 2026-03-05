@@ -9,3 +9,4 @@ dist
 *.secret
 *.private.key
 scripts/.env
+*.tgz

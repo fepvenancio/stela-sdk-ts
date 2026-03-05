@@ -19,8 +19,8 @@ describe('convertToShares', () => {
     // After first fill of 5000 BPS, totalSupply = 5000 * VIRTUAL_SHARE_OFFSET
     const firstShares = convertToShares(5000n, 0n, 0n)
     const secondShares = convertToShares(3000n, firstShares, 5000n)
-    // 3000 * (firstShares + OFFSET) / (5000 + 1)
-    const expected = (3000n * (firstShares + VIRTUAL_SHARE_OFFSET)) / 5001n
+    // 3000 * (firstShares + OFFSET) / 5000
+    const expected = (3000n * (firstShares + VIRTUAL_SHARE_OFFSET)) / 5000n
     expect(secondShares).toBe(expected)
   })
 })

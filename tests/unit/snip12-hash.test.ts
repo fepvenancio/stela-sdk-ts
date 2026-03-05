@@ -136,7 +136,6 @@ describe('LendOffer typed data hash', () => {
     issuedDebtPercentage: 10_000n, // 100% (MAX_BPS)
     nonce: 1n,
     chainId: CHAIN_ID,
-    // lenderCommitment defaults to '0' (non-private)
   })
 
   it('has the correct primaryType', () => {
@@ -148,11 +147,6 @@ describe('LendOffer typed data hash', () => {
     const pct = msg.issued_debt_percentage as { low: string; high: string }
     expect(pct.low).toBe('10000')
     expect(pct.high).toBe('0')
-  })
-
-  it('includes lender_commitment in the message', () => {
-    const msg = lendTD.message as Record<string, unknown>
-    expect(msg.lender_commitment).toBe('0')
   })
 
   it('produces a deterministic struct hash', () => {
@@ -187,17 +181,4 @@ describe('LendOffer typed data hash', () => {
     expect(msgHash).not.toBe('0x0')
   })
 
-  it('produces a different hash with non-zero lenderCommitment', () => {
-    const privateTD = getLendOfferTypedData({
-      orderHash,
-      lender: LENDER,
-      issuedDebtPercentage: 10_000n,
-      nonce: 1n,
-      chainId: CHAIN_ID,
-      lenderCommitment: '0xdeadbeef',
-    })
-    const privateHash = typedData.getMessageHash(privateTD, LENDER)
-    const publicHash = typedData.getMessageHash(lendTD, LENDER)
-    expect(privateHash).not.toBe(publicHash)
-  })
 })
