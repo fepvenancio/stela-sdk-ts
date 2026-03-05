@@ -117,7 +117,6 @@ Return a `Call` object for use with `account.execute()`. Bundle multiple calls (
 | `buildRepay(id)` | Repay a filled inscription |
 | `buildLiquidate(id)` | Liquidate an expired inscription |
 | `buildRedeem(id, shares)` | Redeem shares for underlying assets |
-| `buildPrivateRedeem(request, proof)` | Redeem shares via the privacy pool with a ZK proof |
 | `buildSettle(params)` | Settle an off-chain order (used by relayer bots) |
 | `buildFillSignedOrder(order, sig, fillBps)` | Fill a signed order on-chain |
 | `buildCancelOrder(order)` | Cancel a specific signed order |
@@ -136,7 +135,6 @@ Convenience wrappers that call `account.execute()` directly. Accept optional `ap
 | `repay(id, approvals?)` | Repay a loan |
 | `liquidate(id)` | Liquidate an expired loan |
 | `redeem(id, shares)` | Redeem ERC1155 shares |
-| `privateRedeem(request, proof)` | Redeem via privacy pool |
 | `fillSignedOrder(order, sig, fillBps, approvals?)` | Fill a signed order |
 | `cancelOrder(order)` | Cancel a signed order |
 | `cancelOrdersByNonce(minNonce)` | Bulk cancel by nonce |
@@ -208,55 +206,10 @@ import {
 | Function | Description |
 |----------|-------------|
 | `getInscriptionOrderTypedData(params)` | Build SNIP-12 typed data for a borrower's InscriptionOrder |
-| `getLendOfferTypedData(params)` | Build SNIP-12 typed data for a lender's LendOffer (supports `lenderCommitment` for privacy) |
+| `getLendOfferTypedData(params)` | Build SNIP-12 typed data for a lender's LendOffer |
 | `hashAssets(assets)` | Poseidon hash of an asset array (matches Cairo's `hash_assets()`) |
 | `serializeSignature(sig)` | Convert `string[]` signature to `{ r, s }` for storage |
 | `deserializeSignature(stored)` | Convert `{ r, s }` back to `string[]` |
-
----
-
-### Privacy Utilities
-
-Functions for the privacy pool (shielded share commitments via Poseidon hashing).
-
-```typescript
-import {
-  createPrivateNote,
-  computeCommitment,
-  computeNullifier,
-  hashPair,
-  generateSalt,
-} from '@fepvenancio/stela-sdk'
-```
-
-| Function | Returns | Description |
-|----------|---------|-------------|
-| `createPrivateNote(owner, inscriptionId, shares, salt?)` | `PrivateNote` | Generate a full private note (auto-generates salt if omitted) |
-| `computeCommitment(owner, inscriptionId, shares, salt)` | `string` | Compute a Poseidon commitment hash |
-| `computeNullifier(commitment, ownerSecret)` | `string` | Derive a nullifier from a commitment |
-| `hashPair(left, right)` | `string` | Poseidon hash of two children (Merkle tree nodes) |
-| `generateSalt()` | `string` | Random felt252 salt for commitment uniqueness |
-
-#### Types
-
-```typescript
-interface PrivateNote {
-  owner: string
-  inscriptionId: bigint
-  shares: bigint
-  salt: string
-  commitment: string
-}
-
-interface PrivateRedeemRequest {
-  root: string            // Merkle root the proof was generated against
-  inscriptionId: bigint
-  shares: bigint
-  nullifier: string       // Prevents double-spend
-  changeCommitment: string // For partial redemption ('0' if full)
-  recipient: string
-}
-```
 
 ---
 
@@ -296,7 +249,7 @@ import { parseEvent, parseEvents, SELECTORS } from '@fepvenancio/stela-sdk'
 | `parseEvent(raw)` | Parse a single raw event into a typed `StelaEvent` |
 | `parseEvents(raws)` | Parse an array of raw events |
 
-Supported event types: `InscriptionCreated`, `InscriptionSigned`, `InscriptionCancelled`, `InscriptionRepaid`, `InscriptionLiquidated`, `SharesRedeemed`, `TransferSingle`, `OrderSettled`, `OrderFilled`, `OrderCancelled`, `OrdersBulkCancelled`, `PrivateSettled`, `PrivateSharesRedeemed`.
+Supported event types: `InscriptionCreated`, `InscriptionSigned`, `InscriptionCancelled`, `InscriptionRepaid`, `InscriptionLiquidated`, `SharesRedeemed`, `TransferSingle`, `OrderSettled`, `OrderFilled`, `OrderCancelled`, `OrdersBulkCancelled`.
 
 ---
 
@@ -369,12 +322,28 @@ All exported types from the SDK:
 | `LockerInfo` | Locker information from the API |
 | `LockerState` | Locker address + unlock status |
 | `LockerCall` | Call to execute through a locker |
+| `RawEvent` | Raw StarkNet event (keys, data, tx_hash, block) |
 | `StelaEvent` | Discriminated union of all protocol events |
-| `PrivateNote` | Private share note for the privacy pool |
-| `PrivateRedeemRequest` | Request to privately redeem shares |
+| `InscriptionCreatedEvent` | InscriptionCreated event type |
+| `InscriptionSignedEvent` | InscriptionSigned event type |
+| `InscriptionCancelledEvent` | InscriptionCancelled event type |
+| `InscriptionRepaidEvent` | InscriptionRepaid event type |
+| `InscriptionLiquidatedEvent` | InscriptionLiquidated event type |
+| `SharesRedeemedEvent` | SharesRedeemed event type |
+| `TransferSingleEvent` | ERC1155 TransferSingle event type |
+| `OrderSettledEvent` | OrderSettled event type |
+| `OrderFilledEvent` | OrderFilled event type |
+| `OrderCancelledEvent` | OrderCancelled event type |
+| `OrdersBulkCancelledEvent` | OrdersBulkCancelled event type |
 | `TokenInfo` | Token metadata (symbol, name, decimals, addresses) |
 | `StatusInput` | Input for `computeStatus()` |
 | `StoredSignature` | Serialized signature for storage (`{ r, s }`) |
+| `InscriptionClientOptions` | Options for InscriptionClient constructor |
+| `ShareClientOptions` | Options for ShareClient constructor |
+| `ApiClientOptions` | Options for ApiClient constructor |
+| `ListInscriptionsParams` | Parameters for `listInscriptions()` |
+| `InscriptionEventRow` | API response row for inscription events |
+| `StelaSdkOptions` | Options for StelaSdk constructor |
 
 ---
 
@@ -384,6 +353,8 @@ All exported types from the SDK:
 |--------|-------------|
 | `STELA_ADDRESS` | Contract addresses per network (`{ sepolia, mainnet }`) |
 | `resolveNetwork(raw?)` | Validate/default network string |
+| `CHAIN_ID` | SNIP-12 chain ID shortstrings per network (`{ sepolia: 'SN_SEPOLIA', mainnet: 'SN_MAIN' }`) |
+| `EXPLORER_TX_URL` | Block explorer base URLs per network (for transaction links) |
 | `MAX_BPS` | `10_000n` (100% in basis points) |
 | `VIRTUAL_SHARE_OFFSET` | `1e16n` (share calculation offset) |
 | `ASSET_TYPE_ENUM` | AssetType to numeric enum mapping |
@@ -391,13 +362,19 @@ All exported types from the SDK:
 | `VALID_STATUSES` | Array of all valid inscription statuses |
 | `STATUS_LABELS` | Human-readable status labels |
 
+### Classes
+
+| Export | Description |
+|--------|-------------|
+| `ApiError` | Error class thrown by ApiClient on HTTP failures |
+
 ### ABIs
 
 The package ships raw ABI JSON files in `src/abi/`:
 
 | File | Contents |
 |------|----------|
-| `src/abi/stela.json` | Full Stela protocol ABI (IStelaProtocol + ERC1155 + Ownable + Privacy) |
+| `src/abi/stela.json` | Full Stela protocol ABI (IStelaProtocol + ERC1155 + Ownable) |
 | `src/abi/erc20.json` | Minimal ERC20 ABI (approve, balanceOf, allowance) |
 | `src/abi/locker.json` | Locker account ABI (__execute__, is_unlocked) |
 
