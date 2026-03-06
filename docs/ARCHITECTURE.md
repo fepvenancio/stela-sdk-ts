@@ -29,13 +29,9 @@ src/
     shares.ts                     convertToShares, scaleByPercentage, sharesToPercentage, calculateFeeShares
 
   offchain/
-    typed-data.ts                 getInscriptionOrderTypedData, getLendOfferTypedData, getPrivateLendOfferTypedData
+    typed-data.ts                 getInscriptionOrderTypedData, getLendOfferTypedData
     hash.ts                       hashAssets — Poseidon hash matching Cairo hash_assets()
     signature.ts                  serializeSignature, deserializeSignature, StoredSignature
-
-  privacy/
-    types.ts                      PrivateNote, PrivateRedeemRequest interfaces
-    commitment.ts                 computeCommitment, computeDepositCommitment, computeNullifier, hashPair, generateSalt, createPrivateNote
 
   tokens/
     types.ts                      TokenInfo interface
@@ -87,8 +83,8 @@ new StelaSdk({ provider, account?, network?, apiBaseUrl?, stelaAddress? })
 
 **InscriptionClient** — The largest client. Three categories of methods:
 - **Read methods** — call the on-chain contract via RPC (e.g. `getInscription`, `getNonce`, `isPaused`)
-- **Call builders** — sync methods that return `Call` objects without executing (e.g. `buildCreateInscription`, `buildSettle`, `buildPrivateRedeem`)
-- **Execute methods** — async methods that call `account.execute()` (e.g. `createInscription`, `repay`, `privateRedeem`)
+- **Call builders** — sync methods that return `Call` objects without executing (e.g. `buildCreateInscription`, `buildSettle`, `buildRedeem`)
+- **Execute methods** — async methods that call `account.execute()` (e.g. `createInscription`, `repay`, `redeem`)
 
 **ShareClient** — Read-only ERC1155 queries: `balanceOf`, `balanceOfBatch`, `isApprovedForAll`.
 
@@ -131,30 +127,32 @@ No other runtime dependencies exist.
 
 ---
 
-## Genesis NFT & FeeVault System
+## Genesis NFT & Fee Discount System
 
-The protocol includes a Genesis NFT (ERC721, 500 supply) whose holders earn protocol fees via a FeeVault contract. The SDK does not yet include Genesis/FeeVault client code, but the contracts emit events that indexers should handle:
+The protocol includes a Genesis NFT (ERC721, 300 supply) whose holders receive fee discounts. Fees are sent directly to the treasury via simple transfer -- there is no separate FeeVault contract.
 
 ### Contract Events (not yet in SDK selectors)
 
 | Event | Contract | Fields |
 |-------|----------|--------|
 | `Minted` | StelaGenesis | `token_id` (key), `minter` (key), `price` |
-| `Deposited` | FeeVault | `token` (key), `amount`, `per_nft` |
-| `Claimed` | FeeVault | `token_id` (key), `token` (key), `amount`, `recipient` |
-| `TokenRegistered` | FeeVault | `token` (key), `index` |
 
 ### Fee Structure (enforced in stela.cairo)
 
-- **SETTLE:** 25 BPS total (5 relayer + 15 genesis vault + 5 treasury)
-- **REDEEM:** 10 BPS total (all to genesis vault)
+- **SETTLE:** 20 BPS total (5 relayer + 15 treasury)
+- **REDEEM:** 10 BPS total (all to treasury)
 - **LIQUIDATE:** no extra fee
-- When `fee_vault == zero_address`, no Genesis fees are taken (backwards compatible)
 
-### FeeVault Interaction Pattern
+### Fee Discount Model
 
-The Stela contract calls `FeeVault.deposit(token, amount)` internally during settle and redeem. NFT holders call `claim(token_id)` or `claim_batch(token_ids)` directly on the FeeVault to withdraw accumulated fees. The vault uses a cumulative sum pattern -- each deposit increments a per-token counter by `amount / 500`, and claims compute the delta since last claim.
+Genesis NFT holders receive fee discounts on settle and redeem:
+- **Base discount:** 15% (1+ NFT held)
+- **Volume tiers:** +5% per tier (7 tiers from $10K to $1M settled volume)
+- **Extra NFTs:** +2% per additional NFT held
+- **Cap:** 50% maximum discount
+- **Floors:** settle 10 BPS minimum, redeem 5 BPS minimum
+- Relayer fee (5 BPS) is never discounted
 
 ### Genesis NFT Mint Interaction
 
-The StelaGenesis contract accepts STRK (ERC20) payment at 5,000 STRK per NFT. Callers must approve the Genesis contract for `mint_price` before calling `mint()` or `mint_batch(quantity)`. Sequential IDs 1-500.
+The StelaGenesis contract accepts STRK (ERC20) payment at 1,000 STRK per NFT. Constructor mints 50 NFTs (IDs 1-50) to treasury, public supply is 250 (IDs 51-300). Per-wallet cap of 5.

@@ -12,7 +12,6 @@ Complete reference for every exported function, class, and constant in `@fepvena
 - [Math](#math)
 - [Events](#events)
 - [Off-Chain (SNIP-12)](#off-chain-snip-12)
-- [Privacy](#privacy)
 - [Client Classes](#client-classes)
   - [StelaSdk](#stelasdk)
   - [InscriptionClient](#inscriptionclient)
@@ -355,8 +354,6 @@ const SELECTORS: {
 
 Pre-computed event selector hashes (11 selectors). Computed via `hash.getSelectorFromName()`.
 
-> **Note:** `PrivateSettled` and `PrivateSharesRedeemed` are NOT in `SELECTORS`. The event parser does not handle these two event types. They are defined as types (`PrivateSettledEvent`, `PrivateSharesRedeemedEvent`) and are handled by the application's indexer separately.
-
 ### parseEvent
 
 ```ts
@@ -417,29 +414,12 @@ function getLendOfferTypedData(params: {
   issuedDebtPercentage: bigint
   nonce: bigint
   chainId: string
-  lenderCommitment?: string   // default '0' (non-private)
 }): TypedData
 ```
 
 Build SNIP-12 `TypedData` for a lender's `LendOffer`.
 
-**SNIP-12 struct fields:** `order_hash` (felt), `lender` (ContractAddress), `issued_debt_percentage` (u256), `nonce` (felt), `lender_commitment` (felt).
-
-When `lenderCommitment` is non-zero, the settlement is private: shares go to the privacy pool Merkle tree instead of minting ERC1155.
-
-### getPrivateLendOfferTypedData
-
-```ts
-function getPrivateLendOfferTypedData(params: {
-  orderHash: string
-  issuedDebtPercentage: bigint
-  nonce: bigint
-  chainId: string
-  depositCommitment: string
-}): TypedData
-```
-
-Convenience wrapper: calls `getLendOfferTypedData` with `lender='0x0'` and `lenderCommitment=depositCommitment`. Used for anonymous private settlements.
+**SNIP-12 struct fields (5 fields):** `order_hash` (felt), `lender` (ContractAddress), `issued_debt_percentage` (u256), `nonce` (felt).
 
 ### hashAssets
 
@@ -464,83 +444,6 @@ function deserializeSignature(stored: StoredSignature): string[]
 ```
 
 Convert `{ r, s }` back to `[r, s]` for on-chain use.
-
----
-
-## Privacy
-
-All privacy functions use Poseidon hashing via starknet.js and match the Cairo implementations in `stela-privacy`.
-
-### computeCommitment
-
-```ts
-function computeCommitment(
-  owner: string,
-  inscriptionId: bigint,
-  shares: bigint,
-  salt: string,            // NOTE: string type
-): string
-```
-
-**Formula:** `Poseidon(STELA_COMMITMENT_V1, owner, id_low, id_high, shares_low, shares_high, salt)`
-
-Domain separator `STELA_COMMITMENT_V1` is encoded as a StarkNet short string.
-
-### computeDepositCommitment
-
-```ts
-function computeDepositCommitment(
-  depositor: string,
-  token: string,
-  amount: bigint,
-  salt: bigint,            // NOTE: bigint type (inconsistent with computeCommitment's string)
-): string
-```
-
-**Formula:** `Poseidon(STELA_COMMITMENT_V1, depositor, token, amount_low, amount_high, salt_hex)`
-
-> **Accuracy note:** `salt` is `bigint` here but `string` in `computeCommitment`. This is an inconsistency in the SDK.
-
-### computeNullifier
-
-```ts
-function computeNullifier(commitment: string, ownerSecret: string): string
-```
-
-**Formula:** `Poseidon(STELA_NULLIFIER_V1, commitment, ownerSecret)`
-
-Domain separator `STELA_NULLIFIER_V1` is encoded as a StarkNet short string.
-
-### hashPair
-
-```ts
-function hashPair(left: string, right: string): string
-```
-
-**Formula:** `Poseidon(left, right)`
-
-For Merkle tree internal nodes. **Order-dependent** (not commutative).
-
-### generateSalt
-
-```ts
-function generateSalt(): string
-```
-
-Generate 31 random bytes via `crypto.getRandomValues()`, returned as a hex-encoded felt252 (always < field prime).
-
-### createPrivateNote
-
-```ts
-function createPrivateNote(
-  owner: string,
-  inscriptionId: bigint,
-  shares: bigint,
-  salt?: string,
-): PrivateNote
-```
-
-Create a full `PrivateNote`: generates a random salt if not provided, computes the commitment, returns the complete note object.
 
 ---
 
@@ -599,9 +502,6 @@ All return `Call` objects synchronously without executing.
 | `buildRepay` | `(inscriptionId: bigint): Call` |
 | `buildLiquidate` | `(inscriptionId: bigint): Call` |
 | `buildRedeem` | `(inscriptionId: bigint, shares: bigint): Call` |
-| `buildPrivateRedeem` | `(request: PrivateRedeemRequest, proof: string[]): Call` |
-| `buildShieldDeposit` | `(params: { privacyPoolAddress, token, amount, commitment }): Call` |
-| `buildSettlePrivate` | `(params): Call` -- forces lender to `'0x0'`, delegates to `buildSettle` |
 | `buildSettle` | `(params): Call` -- see below |
 | `buildFillSignedOrder` | `(order: SignedOrder, signature: string[], fillBps: bigint): Call` |
 | `buildCancelOrder` | `(order: SignedOrder): Call` |
@@ -630,10 +530,7 @@ All return `Call` objects synchronously without executing.
 | `offer.lender` | `string` | Lender address |
 | `offer.issuedDebtPercentage` | `bigint` | Percentage being filled (BPS) |
 | `offer.nonce` | `bigint` | Lender's nonce |
-| `offer.lenderCommitment` | `string?` | Privacy commitment. Non-zero = private settlement. Default `'0'`. |
 | `lenderSig` | `string[]` | Lender's SNIP-12 signature `[r, s]` |
-
-**`buildSettlePrivate` params:** Same as `buildSettle` but `offer` does not have `lender` (forced to `'0x0'`). `offer.lenderCommitment` is required.
 
 #### Execute Methods
 
@@ -648,7 +545,6 @@ All require `account` in constructor. All return `Promise<{ transaction_hash: st
 | `repay` | `(inscriptionId: bigint, approvals?: Call[])` |
 | `liquidate` | `(inscriptionId: bigint)` |
 | `redeem` | `(inscriptionId: bigint, shares: bigint)` |
-| `privateRedeem` | `(request: PrivateRedeemRequest, proof: string[])` |
 | `fillSignedOrder` | `(order: SignedOrder, signature: string[], fillBps: bigint, approvals?: Call[])` |
 | `cancelOrder` | `(order: SignedOrder)` |
 | `cancelOrdersByNonce` | `(minNonce: string)` |
@@ -729,12 +625,8 @@ Thrown by `ApiClient` when an HTTP request returns a non-OK status.
 
 These are known inconsistencies and edge cases documented for transparency:
 
-1. **SELECTORS missing privacy events:** `PrivateSettled` and `PrivateSharesRedeemed` event selectors are not in the `SELECTORS` object. The `parseEvent()` function cannot parse these events. They are handled by the application's indexer directly.
+1. **Mainnet address is placeholder:** `STELA_ADDRESS.mainnet` is `'0x0'`. The protocol is not yet deployed to mainnet.
 
-2. **Salt type inconsistency:** `computeCommitment()` takes `salt` as `string`, while `computeDepositCommitment()` takes `salt` as `bigint`. Both produce hex strings internally.
+2. **getCancelOrderTypedData is app-only:** This function does NOT exist in the SDK. It is defined only in the `stela-app` repo at `src/lib/offchain.ts`. The SDK's offchain module exports `getInscriptionOrderTypedData` and `getLendOfferTypedData`.
 
-3. **Mainnet address is placeholder:** `STELA_ADDRESS.mainnet` is `'0x0'`. The protocol is not yet deployed to mainnet.
-
-4. **getCancelOrderTypedData is app-only:** This function does NOT exist in the SDK. It is defined only in the `stela-app` repo at `src/lib/offchain.ts`. The SDK's offchain module exports `getInscriptionOrderTypedData`, `getLendOfferTypedData`, and `getPrivateLendOfferTypedData`.
-
-5. **getLockerBalances makes sequential RPC calls:** One `balance_of` call per token address, not batched. May be slow for many tokens.
+3. **getLockerBalances makes sequential RPC calls:** One `balance_of` call per token address, not batched. May be slow for many tokens.

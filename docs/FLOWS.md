@@ -107,7 +107,6 @@ const lendTD = getLendOfferTypedData({
   issuedDebtPercentage: 10000n,   // 100%
   nonce: 0n,
   chainId: 'SN_SEPOLIA',
-  // lenderCommitment defaults to '0' (non-private)
 })
 
 const lenderSig = await lenderAccount.signMessage(lendTD)
@@ -143,122 +142,12 @@ const settleCall = sdk.inscriptions.buildSettle({
     lender: '0xLENDER',
     issuedDebtPercentage: 10000n,
     nonce: 0n,
-    // lenderCommitment: '0'  (default, non-private)
   },
   lenderSig: deserializeSignature(lenderStoredSig),
 })
 
 // Execute
 const { transaction_hash } = await relayerClient.execute([settleCall])
-```
-
----
-
-## Private Lending Flow
-
-Private lending uses the privacy pool so the lender's identity is hidden on-chain.
-
-### Step 1: Compute deposit commitment and shield tokens
-
-```ts
-import {
-  computeDepositCommitment,
-  generateSalt,
-} from '@fepvenancio/stela-sdk'
-
-// Generate a secret salt (keep this safe -- losing it means losing access)
-const salt = 12345n  // or use a random bigint
-
-// Compute the deposit commitment
-const depositCommitment = computeDepositCommitment(
-  '0xDEPOSITOR',
-  '0xTOKEN',
-  1000000n,
-  salt,
-)
-
-// Build and execute the shield transaction
-const shieldCall = sdk.inscriptions.buildShieldDeposit({
-  privacyPoolAddress: '0xPRIVACY_POOL',
-  token: '0xTOKEN',
-  amount: 1000000n,
-  commitment: depositCommitment,
-})
-await sdk.inscriptions.execute([approveCall, shieldCall])
-```
-
-### Step 2: Sign a private lend offer
-
-```ts
-import { getPrivateLendOfferTypedData } from '@fepvenancio/stela-sdk'
-
-// Private offer -- lender is 0x0 (anonymous)
-const privateTD = getPrivateLendOfferTypedData({
-  orderHash,
-  issuedDebtPercentage: 10000n,
-  nonce: 0n,
-  chainId: 'SN_SEPOLIA',
-  depositCommitment,
-})
-
-const sig = await account.signMessage(privateTD)
-```
-
-### Step 3: Relayer settles privately
-
-```ts
-// Uses buildSettlePrivate which forces lender to 0x0
-const settleCall = sdk.inscriptions.buildSettlePrivate({
-  order: { ...orderParams },
-  debtAssets,
-  interestAssets,
-  collateralAssets,
-  borrowerSig: ['0xR', '0xS'],
-  offer: {
-    orderHash,
-    issuedDebtPercentage: 10000n,
-    nonce: 0n,
-    lenderCommitment: depositCommitment,
-  },
-  lenderSig: ['0xR', '0xS'],
-})
-
-await relayerClient.execute([settleCall])
-```
-
-### Step 4: Create a private note for redemption
-
-```ts
-import { createPrivateNote, computeNullifier } from '@fepvenancio/stela-sdk'
-
-// Create a note representing the committed shares
-const note = createPrivateNote('0xOWNER', inscriptionId, shareAmount)
-
-// Store note.salt and note.commitment securely (e.g. encrypted localStorage)
-// These are needed for future redemption
-
-// When ready to redeem, derive the nullifier
-const nullifier = computeNullifier(note.commitment, '0xOWNER_SECRET')
-```
-
-### Step 5: Privately redeem shares
-
-```ts
-import type { PrivateRedeemRequest } from '@fepvenancio/stela-sdk'
-
-const request: PrivateRedeemRequest = {
-  root: '0xMERKLE_ROOT',         // current Merkle root from the privacy pool
-  inscriptionId: 1n,
-  shares: 1000n,
-  nullifier,
-  changeCommitment: '0x0',       // '0x0' for full redemption
-  recipient: '0xRECIPIENT',
-}
-
-const { transaction_hash } = await sdk.inscriptions.privateRedeem(
-  request,
-  merkleProof,  // string[] -- Merkle proof elements
-)
 ```
 
 ---
@@ -306,8 +195,6 @@ for (const raw of rawEvents) {
 // Use SELECTORS for filtering events before parsing
 const createdEvents = rawEvents.filter(e => e.keys[0] === SELECTORS.InscriptionCreated)
 ```
-
-> **Note:** `SELECTORS` does not include `PrivateSettled` or `PrivateSharesRedeemed`. Those events are defined as types (`PrivateSettledEvent`, `PrivateSharesRedeemedEvent`) but are not parsed by `parseEvent()`. They are handled by the application's indexer separately.
 
 ---
 

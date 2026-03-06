@@ -6,11 +6,11 @@ Stela is a permissionless P2P lending protocol on StarkNet. Anyone can run a **r
 
 ## Fee Economics
 
-Treasury is set to the FeeVault — no individual receives protocol revenue. 100% of non-relayer fees go to Genesis NFT holders.
+Protocol fees go to the treasury address. Genesis NFT holders receive on-chain fee discounts (up to 50%).
 
-| Event | Total Fee | Relayer | Genesis Vault |
-|-------|-----------|---------|---------------|
-| Settlement | 25 BPS (0.25%) | **5 BPS** | 20 BPS |
+| Event | Total Fee | Relayer | Treasury |
+|-------|-----------|---------|----------|
+| Settlement | 20 BPS (0.20%) | **5 BPS** | 15 BPS |
 | Redemption | 10 BPS (0.10%) | 0 BPS | 10 BPS |
 | Liquidation | 0 BPS | 0 BPS | 0 BPS |
 
@@ -48,7 +48,6 @@ const call = client.buildSettle({
     lender: '0x...',
     issuedDebtPercentage: 10000n, // 100% = 10000 BPS
     nonce: 0n,
-    lenderCommitment: '0',       // '0' for public, commitment hash for private
   },
   lenderSig: ['0xr...', '0xs...'],
 })
@@ -66,7 +65,7 @@ The \`settle()\` calldata is assembled in this exact order:
 3. **Interest assets** array: same format
 4. **Collateral assets** array: same format
 5. **Borrower signature**: \`[len, r, s]\`
-6. **LendOffer** (6 fields): order_hash, lender, bps_low, bps_high, nonce, lender_commitment
+6. **LendOffer** (5 fields): order_hash, lender, bps_low, bps_high, nonce
 7. **Lender signature**: \`[len, r, s]\`
 
 ## \`buildLiquidate()\`

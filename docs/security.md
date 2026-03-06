@@ -61,13 +61,9 @@ No API keys, private keys, admin keys, or credentials of any kind are included i
 
 ### 5. Off-Chain Signing Uses Standard SNIP-12
 
-The off-chain signing functions (`getInscriptionOrderTypedData`, `getLendOfferTypedData`, `getPrivateLendOfferTypedData`) build standard SNIP-12 `TypedData` objects. The actual signing is performed by the user's `Account.signMessage()` method -- the SDK only constructs the data to be signed.
+The off-chain signing functions (`getInscriptionOrderTypedData`, `getLendOfferTypedData`) build standard SNIP-12 `TypedData` objects. The actual signing is performed by the user's `Account.signMessage()` method -- the SDK only constructs the data to be signed.
 
 The `serializeSignature` / `deserializeSignature` functions handle the `{ r, s }` serialization format for storing signatures. These are public values (the signature itself, not the signing key).
-
-### 6. Privacy Module Uses Client-Side Randomness
-
-The `generateSalt()` function uses `crypto.getRandomValues()` for salt generation. The salt and derived private notes (commitment, nullifier) are sensitive -- they must be stored securely by the application (e.g. encrypted localStorage). The SDK does not store or transmit these values. Losing a private note's salt means the committed shares cannot be redeemed.
 
 ---
 
@@ -101,4 +97,3 @@ const api = new ApiClient({ baseUrl: '/api/stela' })
 | API data integrity | `ApiClient` fetches from the indexer -- data should be validated against on-chain state for high-value operations. |
 | Supply chain | Single peer dependency (`starknet`). No transitive dependency on sensitive packages. |
 | Secret leakage | No secrets, API keys, or credentials are embedded in the package. |
-| Privacy note loss | Private notes (salt, commitment) are user-managed. SDK does not store them. Losing a note means losing access to committed shares. |

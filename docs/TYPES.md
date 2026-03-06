@@ -274,8 +274,6 @@ type StelaEvent =
   | OrderFilledEvent
   | OrderCancelledEvent
   | OrdersBulkCancelledEvent
-  | PrivateSettledEvent
-  | PrivateSharesRedeemedEvent
 ```
 
 Discriminated union of all Stela protocol events. Use the `type` field to narrow.
@@ -436,69 +434,6 @@ interface OrdersBulkCancelledEvent {
 
 Emitted by `cancel_orders_by_nonce()`.
 
-### PrivateSettledEvent
-
-```ts
-interface PrivateSettledEvent {
-  type: 'PrivateSettled'
-  inscription_id: bigint
-  lender_commitment: string
-  shares_committed: bigint
-  transaction_hash: string
-  block_number: number
-}
-```
-
-Emitted by `settle()` when `lender_commitment != 0`.
-
-### PrivateSharesRedeemedEvent
-
-```ts
-interface PrivateSharesRedeemedEvent {
-  type: 'PrivateSharesRedeemed'
-  inscription_id: bigint
-  nullifier: string
-  shares: bigint
-  recipient: string
-  transaction_hash: string
-  block_number: number
-}
-```
-
-Emitted by `private_redeem()`.
-
----
-
-## Privacy Types
-
-### PrivateNote
-
-```ts
-interface PrivateNote {
-  owner: string           // Lender who owns these shares
-  inscriptionId: bigint   // Inscription ID
-  shares: bigint          // Number of shares
-  salt: string            // Random salt for commitment uniqueness
-  commitment: string      // Poseidon hash of above fields
-}
-```
-
-A private share note representing committed shares in the privacy pool. Created by `createPrivateNote()`.
-
-### PrivateRedeemRequest
-
-```ts
-interface PrivateRedeemRequest {
-  root: string            // Merkle root the proof was generated against
-  inscriptionId: bigint   // Inscription ID
-  shares: bigint          // Number of shares being redeemed
-  nullifier: string       // Prevents double-spend
-  changeCommitment: string // For partial redemption ('0' if full)
-  recipient: string       // Recipient address for redeemed assets
-}
-```
-
-Request to privately redeem shares. Matches the Cairo `PrivateRedeemRequest` struct field order.
 
 ---
 

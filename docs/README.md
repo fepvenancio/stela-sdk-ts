@@ -77,7 +77,6 @@ const { transaction_hash } = await sdk.inscriptions.repay(1n, [approveCall])
 | `events/` | StarkNet event selectors and parsers for all protocol events |
 | `math/` | Pure BigInt share math: conversions, scaling, fee calculations |
 | `offchain/` | SNIP-12 typed data builders for gasless signing, Poseidon asset hashing |
-| `privacy/` | Privacy pool primitives: commitments, nullifiers, Merkle hashing, note creation |
 | `tokens/` | Curated token registry with addresses for sepolia and mainnet |
 | `types/` | TypeScript type definitions: inscriptions, assets, API shapes, events, locker state |
 | `utils/` | u256 conversion, address normalization, amount formatting, status computation |
