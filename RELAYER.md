@@ -10,12 +10,12 @@ Protocol fees go to the treasury address. Genesis NFT holders receive on-chain f
 
 | Event | Total Fee | Relayer | Treasury |
 |-------|-----------|---------|----------|
-| Settlement (Lending) | 20 BPS (0.20%) | **5 BPS** | 15 BPS |
-| Swap | 10 BPS (0.10%) | **5 BPS** | 5 BPS |
-| Redemption | 10 BPS (0.10%) | 0 BPS | 10 BPS |
-| Liquidation | 0 BPS | 0 BPS | 0 BPS |
+| Settlement (Lending) | 0.20% | **0.05%** | 0.15% |
+| Swap | 0.10% | **0.05%** | 0.05% |
+| Redemption | 0.10% | 0% | 0.10% |
+| Liquidation | 0% | 0% | 0% |
 
-For a 10,000 USDC loan, the relayer earns **5 USDC** per settlement.
+For a 10,000 USDC loan, the relayer earns **5 USDC** per settlement (0.05%).
 
 ## \`buildSettle()\`
 
@@ -68,6 +68,35 @@ The \`settle()\` calldata is assembled in this exact order:
 5. **Borrower signature**: \`[len, r, s]\`
 6. **LendOffer** (5 fields): order_hash, lender, bps_low, bps_high, nonce
 7. **Lender signature**: \`[len, r, s]\`
+
+## \`buildBatchSettle()\`
+
+For settling multiple orders atomically with a single lender signature. Uses the \`BatchLendOffer\` SNIP-12 type — the lender signs once to fill multiple orders in one transaction.
+
+\`\`\`typescript
+import { InscriptionClient, getBatchLendOfferTypedData, hashBatchEntries } from '@fepvenancio/stela-sdk'
+
+const client = new InscriptionClient(stelaAddress, account)
+
+const call = client.buildBatchSettle({
+  orders: [order1, order2],
+  debtAssetsArray: [debtAssets1, debtAssets2],
+  interestAssetsArray: [interestAssets1, interestAssets2],
+  collateralAssetsArray: [collateralAssets1, collateralAssets2],
+  borrowerSigs: [sig1, sig2],
+  batchOffer: {
+    lender: '0x...',
+    entriesHash: hashBatchEntries(entries),
+    entriesCount: 2,
+    nonce: 0n,
+  },
+  lenderSig: ['0xr...', '0xs...'],
+})
+
+await account.execute([call])
+\`\`\`
+
+This is more gas-efficient than calling \`settle()\` multiple times because it shares the lender signature verification overhead across all orders.
 
 ## \`buildLiquidate()\`
 

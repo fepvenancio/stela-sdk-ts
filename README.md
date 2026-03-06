@@ -118,6 +118,7 @@ Return a `Call` object for use with `account.execute()`. Bundle multiple calls (
 | `buildLiquidate(id)` | Liquidate an expired inscription |
 | `buildRedeem(id, shares)` | Redeem shares for underlying assets |
 | `buildSettle(params)` | Settle an off-chain order (used by relayer bots) |
+| `buildBatchSettle(params)` | Settle multiple off-chain orders atomically with 1 lender signature (BatchLendOffer) |
 | `buildFillSignedOrder(order, sig, fillBps)` | Fill a signed order on-chain |
 | `buildCancelOrder(order)` | Cancel a specific signed order |
 | `buildCancelOrdersByNonce(minNonce)` | Bulk cancel orders below a nonce |
@@ -197,7 +198,9 @@ Functions for creating SNIP-12 typed data for gasless order creation and settlem
 import {
   getInscriptionOrderTypedData,
   getLendOfferTypedData,
+  getBatchLendOfferTypedData,
   hashAssets,
+  hashBatchEntries,
   serializeSignature,
   deserializeSignature,
 } from '@fepvenancio/stela-sdk'
@@ -207,7 +210,9 @@ import {
 |----------|-------------|
 | `getInscriptionOrderTypedData(params)` | Build SNIP-12 typed data for a borrower's InscriptionOrder |
 | `getLendOfferTypedData(params)` | Build SNIP-12 typed data for a lender's LendOffer |
+| `getBatchLendOfferTypedData(params)` | Build SNIP-12 typed data for a lender's BatchLendOffer (multi-order settlement) |
 | `hashAssets(assets)` | Poseidon hash of an asset array (matches Cairo's `hash_assets()`) |
+| `hashBatchEntries(entries)` | Poseidon hash of BatchEntry array for batch_settle() |
 | `serializeSignature(sig)` | Convert `string[]` signature to `{ r, s }` for storage |
 | `deserializeSignature(stored)` | Convert `{ r, s }` back to `string[]` |
 
@@ -313,6 +318,7 @@ All exported types from the SDK:
 | `StoredInscription` | Raw on-chain inscription data |
 | `Inscription` | Parsed inscription with computed status |
 | `SignedOrder` | Signed order for the matching engine |
+| `BatchEntry` | Entry in a batch settle (order hash + fill BPS) |
 | `InscriptionRow` | API response row for inscriptions |
 | `AssetRow` | API response row for assets |
 | `ApiListResponse<T>` | Paginated list response envelope |
@@ -397,7 +403,7 @@ npm publish --access public
 
 ## Running a Relayer
 
-The Stela protocol is fully permissionless — anyone can run a relayer to settle matched orders and earn **5 BPS** on every settlement. See [RELAYER.md](RELAYER.md) for the SDK integration guide and the [stela-relayer](https://github.com/fepvenancio/stela-relayer) repo for a standalone implementation.
+The Stela protocol is fully permissionless — anyone can run a relayer to settle matched orders and earn **0.05%** on every settlement. See [RELAYER.md](RELAYER.md) for the SDK integration guide and the [stela-relayer](https://github.com/fepvenancio/stela-relayer) repo for a standalone implementation.
 
 ## License
 

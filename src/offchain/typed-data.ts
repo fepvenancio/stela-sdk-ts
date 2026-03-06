@@ -1,6 +1,7 @@
 import type { TypedData } from 'starknet'
 import type { Asset } from '../types/inscription.js'
 import { hashAssets } from './hash.js'
+import type { BatchEntry } from './hash.js'
 
 /** Domain separator -- MUST match the Cairo contract's SNIP12Metadata */
 const STELA_DOMAIN = {
@@ -114,6 +115,46 @@ export function getLendOfferTypedData(params: {
         high: (params.issuedDebtPercentage >> 128n).toString(),
       },
       nonce: params.nonce.toString(),
+    },
+  }
+}
+
+/**
+ * Build SNIP-12 TypedData for a lender's BatchLendOffer.
+ * The lender signs this off-chain to accept multiple orders atomically.
+ */
+export function getBatchLendOfferTypedData(params: {
+  batchHash: string
+  count: number
+  lender: string
+  startNonce: bigint
+  chainId: string
+}): TypedData {
+  return {
+    types: {
+      StarknetDomain: [
+        { name: 'name', type: 'shortstring' },
+        { name: 'version', type: 'shortstring' },
+        { name: 'chainId', type: 'shortstring' },
+        { name: 'revision', type: 'shortstring' },
+      ],
+      BatchLendOffer: [
+        { name: 'batch_hash', type: 'felt' },
+        { name: 'count', type: 'u128' },
+        { name: 'lender', type: 'ContractAddress' },
+        { name: 'start_nonce', type: 'felt' },
+      ],
+    },
+    primaryType: 'BatchLendOffer',
+    domain: {
+      ...STELA_DOMAIN,
+      chainId: params.chainId,
+    },
+    message: {
+      batch_hash: params.batchHash,
+      count: params.count.toString(),
+      lender: params.lender,
+      start_nonce: params.startNonce.toString(),
     },
   }
 }

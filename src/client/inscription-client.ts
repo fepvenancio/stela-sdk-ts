@@ -202,6 +202,86 @@ export class InscriptionClient {
     return { contractAddress: this.address, entrypoint: 'settle', calldata }
   }
 
+  buildBatchSettle(params: {
+    orders: Array<{
+      borrower: string
+      debtHash: string
+      interestHash: string
+      collateralHash: string
+      debtCount: number
+      interestCount: number
+      collateralCount: number
+      duration: bigint
+      deadline: bigint
+      multiLender: boolean
+      nonce: bigint
+    }>
+    debtAssetsFlat: Asset[]
+    interestAssetsFlat: Asset[]
+    collateralAssetsFlat: Asset[]
+    borrowerSigs: string[][]
+    batchOffer: {
+      batchHash: string
+      count: number
+      lender: string
+      startNonce: bigint
+    }
+    lenderSig: string[]
+    bpsList: bigint[]
+  }): Call {
+    const calldata: string[] = []
+
+    // orders: Array<InscriptionOrder>
+    calldata.push(String(params.orders.length))
+    for (const order of params.orders) {
+      calldata.push(
+        order.borrower,
+        order.debtHash,
+        order.interestHash,
+        order.collateralHash,
+        String(order.debtCount),
+        String(order.interestCount),
+        String(order.collateralCount),
+        order.duration.toString(),
+        order.deadline.toString(),
+        order.multiLender ? '1' : '0',
+        order.nonce.toString(),
+      )
+    }
+
+    // debt_assets_flat: Array<Asset>
+    calldata.push(...serializeAssets(params.debtAssetsFlat))
+    // interest_assets_flat: Array<Asset>
+    calldata.push(...serializeAssets(params.interestAssetsFlat))
+    // collateral_assets_flat: Array<Asset>
+    calldata.push(...serializeAssets(params.collateralAssetsFlat))
+
+    // borrower_sigs: Array<Array<felt252>>
+    calldata.push(String(params.borrowerSigs.length))
+    for (const sig of params.borrowerSigs) {
+      calldata.push(String(sig.length), ...sig)
+    }
+
+    // batch_offer: BatchLendOffer struct (4 fields)
+    calldata.push(
+      params.batchOffer.batchHash,
+      String(params.batchOffer.count),
+      params.batchOffer.lender,
+      params.batchOffer.startNonce.toString(),
+    )
+
+    // lender_sig: Array<felt252>
+    calldata.push(String(params.lenderSig.length), ...params.lenderSig)
+
+    // bps_list: Array<u256>
+    calldata.push(String(params.bpsList.length))
+    for (const bps of params.bpsList) {
+      calldata.push(...toU256(bps))
+    }
+
+    return { contractAddress: this.address, entrypoint: 'batch_settle', calldata }
+  }
+
   buildFillSignedOrder(order: SignedOrder, signature: string[], fillBps: bigint): Call {
     const calldata: string[] = [
       // SignedOrder struct fields

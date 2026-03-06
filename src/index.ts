@@ -85,12 +85,14 @@ export { parseEvent, parseEvents } from './events/index.js'
 export {
   getInscriptionOrderTypedData,
   getLendOfferTypedData,
+  getBatchLendOfferTypedData,
   hashAssets,
+  hashBatchEntries,
   serializeSignature,
   deserializeSignature,
 } from './offchain/index.js'
 
-export type { StoredSignature } from './offchain/index.js'
+export type { StoredSignature, BatchEntry } from './offchain/index.js'
 
 // ── Clients ──────────────────────────────────────────────────────────
 export {

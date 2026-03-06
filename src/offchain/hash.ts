@@ -3,6 +3,31 @@ import type { Asset } from '../types/inscription.js'
 import { ASSET_TYPE_ENUM } from '../constants/protocol.js'
 import { toU256 } from '../utils/u256.js'
 
+/** Matches Cairo's U256_TYPE_HASH = selector!("\"u256\"(\"low\":\"u128\",\"high\":\"u128\")") */
+const U256_TYPE_HASH = '0x3b143be38b811560b45593fb2a071ec4ddd0a020e10782be62ffe6f39e0e82c'
+
+export interface BatchEntry {
+  orderHash: string // felt252 hex
+  bps: bigint       // u256
+}
+
+/**
+ * Hash an array of BatchEntry using Poseidon -- matches Cairo's hash_batch_entries().
+ *
+ * Format: Poseidon(count, order_hash_1, u256_hash(bps_1), order_hash_2, u256_hash(bps_2), ...)
+ * where u256_hash(bps) = Poseidon(U256_TYPE_HASH, low, high)
+ */
+export function hashBatchEntries(entries: BatchEntry[]): string {
+  const elements: string[] = [String(entries.length)]
+  for (const entry of entries) {
+    elements.push(entry.orderHash)
+    const [low, high] = toU256(entry.bps)
+    const bpsHash = hash.computePoseidonHashOnElements([U256_TYPE_HASH, low, high])
+    elements.push(bpsHash)
+  }
+  return hash.computePoseidonHashOnElements(elements)
+}
+
 /**
  * Hash an array of assets using Poseidon -- matches Cairo's hash_assets().
  *
