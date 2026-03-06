@@ -10,7 +10,8 @@ Protocol fees go to the treasury address. Genesis NFT holders receive on-chain f
 
 | Event | Total Fee | Relayer | Treasury |
 |-------|-----------|---------|----------|
-| Settlement | 20 BPS (0.20%) | **5 BPS** | 15 BPS |
+| Settlement (Lending) | 20 BPS (0.20%) | **5 BPS** | 15 BPS |
+| Swap | 10 BPS (0.10%) | **5 BPS** | 5 BPS |
 | Redemption | 10 BPS (0.10%) | 0 BPS | 10 BPS |
 | Liquidation | 0 BPS | 0 BPS | 0 BPS |
 

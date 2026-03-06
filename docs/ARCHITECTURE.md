@@ -139,8 +139,9 @@ The protocol includes a Genesis NFT (ERC721, 300 supply) whose holders receive f
 
 ### Fee Structure (enforced in stela.cairo)
 
-- **SETTLE:** 20 BPS total (5 relayer + 15 treasury)
-- **REDEEM:** 10 BPS total (all to treasury)
+- **SETTLE (Lending):** 20 BPS total (5 relayer + 15 treasury)
+- **SWAP:** 10 BPS total (5 relayer + 5 treasury)
+- **REDEEM:** 10 BPS total (0 relayer + 10 treasury)
 - **LIQUIDATE:** no extra fee
 
 ### Fee Discount Model
