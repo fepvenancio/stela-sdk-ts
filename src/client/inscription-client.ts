@@ -34,11 +34,6 @@ export class InscriptionClient {
     return String((result as unknown[])[0])
   }
 
-  async getInscriptionFee(): Promise<bigint> {
-    const result = await this.contract.call('get_inscription_fee')
-    return extractU256(result)
-  }
-
   async convertToShares(inscriptionId: bigint, percentage: bigint): Promise<bigint> {
     const result = await this.contract.call('convert_to_shares', [
       ...toU256(inscriptionId),
