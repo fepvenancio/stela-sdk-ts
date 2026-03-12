@@ -10,12 +10,12 @@ Protocol fees go to the treasury address. Genesis NFT holders receive on-chain f
 
 | Event | Total Fee | Relayer | Treasury |
 |-------|-----------|---------|----------|
-| Settlement (Lending) | 0.20% | **0.05%** | 0.15% |
-| Swap | 0.10% | **0.05%** | 0.05% |
-| Redemption | 0.10% | 0% | 0.10% |
+| Settlement (Lending) | 0.25% (25 BPS) | **0.05%** (5 BPS) | 0.20% (20 BPS) |
+| Swap | 0.15% (15 BPS) | **0.05%** (5 BPS) | 0.10% (10 BPS) |
+| Redemption | 0% | 0% | 0% |
 | Liquidation | 0% | 0% | 0% |
 
-For a 10,000 USDC loan, the relayer earns **5 USDC** per settlement (0.05%).
+For a 10,000 USDC loan, the relayer earns **5 USDC** per settlement (5 BPS / 0.05%). The treasury receives 20 USDC (20 BPS), for a total borrower cost of 25 USDC (25 BPS / 0.25%).
 
 ## \`buildSettle()\`
 

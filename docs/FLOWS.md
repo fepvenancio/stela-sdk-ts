@@ -28,15 +28,7 @@ const collateralAssets: Asset[] = [
   { asset_address: '0xNFT', asset_type: 'ERC721', value: 0n, token_id: 42n },
 ]
 
-// Get the protocol fee (BPS applied to lender shares on sign/settle)
-const fee = await sdk.inscriptions.getInscriptionFee()
-const approveCall: Call = {
-  contractAddress: '0xFEE_TOKEN',
-  entrypoint: 'approve',
-  calldata: [sdk.stelaAddress, fee.toString(), '0'],
-}
-
-// Create the inscription (approve + create bundled atomically)
+// Create the inscription
 const { transaction_hash } = await sdk.inscriptions.createInscription(
   {
     is_borrow: true,
@@ -47,7 +39,6 @@ const { transaction_hash } = await sdk.inscriptions.createInscription(
     deadline: 1735689600n,    // expiry timestamp
     multi_lender: false,
   },
-  [approveCall],
 )
 
 console.log('Created inscription, tx:', transaction_hash)

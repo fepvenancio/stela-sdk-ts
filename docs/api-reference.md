@@ -479,7 +479,6 @@ new InscriptionClient({ stelaAddress: string, provider: RpcProvider, account?: A
 |--------|-----------|---------|
 | `getInscription` | `(inscriptionId: bigint)` | `Promise<StoredInscription>` |
 | `getLocker` | `(inscriptionId: bigint)` | `Promise<string>` (locker address) |
-| `getInscriptionFee` | `()` | `Promise<bigint>` (protocol fee in BPS, applied to lender shares on sign/settle) |
 | `convertToShares` | `(inscriptionId: bigint, percentage: bigint)` | `Promise<bigint>` |
 | `getNonce` | `(address: string)` | `Promise<bigint>` |
 | `getRelayerFee` | `()` | `Promise<bigint>` |
