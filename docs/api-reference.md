@@ -33,7 +33,7 @@ const STELA_ADDRESS: Record<Network, string>
 
 | Network | Address |
 |---------|---------|
-| `sepolia` | `0x03e88d289b9ce13e5d6e6ca5159930f9227b08cfbd004231a09a1d6f48568973` |
+| `sepolia` | `0x0109c6caae0c5b4da6e063ed6c02ae784be05aa90806501a48dcfbb213bd7c03` |
 | `mainnet` | `0x0` (placeholder -- not yet deployed) |
 
 ### resolveNetwork
