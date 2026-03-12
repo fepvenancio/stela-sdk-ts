@@ -29,6 +29,8 @@ export type {
   OrderCancelledEvent,
   OrdersBulkCancelledEvent,
   StelaEvent,
+  AuctionStartedEvent,
+  AuctionBidEvent,
   LockerState,
   LockerCall,
 } from './types/index.js'
@@ -45,6 +47,10 @@ export {
   ASSET_TYPE_NAMES,
   CHAIN_ID,
   EXPLORER_TX_URL,
+  GRACE_PERIOD,
+  AUCTION_DURATION,
+  AUCTION_PENALTY_BPS,
+  AUCTION_RESERVE_BPS,
 } from './constants/index.js'
 
 // ── Utilities ─────────────────────────────────────────────────────────
@@ -67,7 +73,7 @@ export type { StatusInput } from './utils/index.js'
 
 // ── Tokens ────────────────────────────────────────────────────────────
 export type { TokenInfo } from './tokens/index.js'
-export { TOKENS, getTokensForNetwork, findTokenByAddress } from './tokens/index.js'
+export { TOKENS, getTokensForNetwork, getNFTCollections, findTokenByAddress } from './tokens/index.js'
 
 // ── Math ──────────────────────────────────────────────────────────────
 export {
@@ -75,6 +81,20 @@ export {
   scaleByPercentage,
   sharesToPercentage,
   calculateFeeShares,
+  divCeil,
+  proRataInterest,
+  shareProportionBps,
+  proportionalAssetValue,
+  computePositionValue,
+  accruedInterestWithBuffer,
+  computeSafePositionFloor,
+  DEFAULT_DUST_BUFFER_SECONDS,
+} from './math/index.js'
+
+export type {
+  AssetValue,
+  AccruedInterestEntry,
+  PositionValue,
 } from './math/index.js'
 
 // ── Events ────────────────────────────────────────────────────────────
@@ -86,6 +106,12 @@ export {
   getInscriptionOrderTypedData,
   getLendOfferTypedData,
   getBatchLendOfferTypedData,
+  getCollectionLendOfferTypedData,
+  getCollectionBorrowAcceptanceTypedData,
+  getRenegotiationProposalTypedData,
+  getCollateralSaleOfferTypedData,
+  getRefinanceOfferTypedData,
+  getRefinanceApprovalTypedData,
   hashAssets,
   hashBatchEntries,
   serializeSignature,

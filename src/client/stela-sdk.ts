@@ -50,6 +50,7 @@ export class StelaSdk {
     this.shares = new ShareClient({
       stelaAddress: this.stelaAddress,
       provider: opts.provider,
+      account: opts.account,
     })
 
     const stelaContract = new Contract(stelaAbi, this.stelaAddress, opts.provider)
