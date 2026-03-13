@@ -1,2 +1,2 @@
 export type { TokenInfo } from './types.js'
-export { TOKENS, getTokensForNetwork, findTokenByAddress } from './registry.js'
+export { TOKENS, getTokensForNetwork, getNFTCollections, findTokenByAddress } from './registry.js'

@@ -289,6 +289,210 @@
       {
         "name": "collateral_asset_count",
         "type": "core::integer::u32"
+      },
+      {
+        "name": "auction_started",
+        "type": "core::bool"
+      },
+      {
+        "name": "auction_start_time",
+        "type": "core::integer::u64"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "stela::snip12::CollectionLendOffer",
+    "members": [
+      {
+        "name": "lender",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "name": "debt_hash",
+        "type": "core::felt252"
+      },
+      {
+        "name": "interest_hash",
+        "type": "core::felt252"
+      },
+      {
+        "name": "debt_count",
+        "type": "core::integer::u32"
+      },
+      {
+        "name": "interest_count",
+        "type": "core::integer::u32"
+      },
+      {
+        "name": "collection_address",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "name": "duration",
+        "type": "core::integer::u64"
+      },
+      {
+        "name": "deadline",
+        "type": "core::integer::u64"
+      },
+      {
+        "name": "nonce",
+        "type": "core::felt252"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "stela::snip12::CollectionBorrowAcceptance",
+    "members": [
+      {
+        "name": "offer_hash",
+        "type": "core::felt252"
+      },
+      {
+        "name": "borrower",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "name": "token_id",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "nonce",
+        "type": "core::felt252"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "stela::snip12::RenegotiationProposal",
+    "members": [
+      {
+        "name": "inscription_id",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "proposer",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "name": "new_duration",
+        "type": "core::integer::u64"
+      },
+      {
+        "name": "new_interest_hash",
+        "type": "core::felt252"
+      },
+      {
+        "name": "new_interest_count",
+        "type": "core::integer::u32"
+      },
+      {
+        "name": "proposal_deadline",
+        "type": "core::integer::u64"
+      },
+      {
+        "name": "nonce",
+        "type": "core::felt252"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "stela::snip12::CollateralSaleOffer",
+    "members": [
+      {
+        "name": "inscription_id",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "borrower",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "name": "min_price",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "payment_token",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "name": "allowed_buyer",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "name": "deadline",
+        "type": "core::integer::u64"
+      },
+      {
+        "name": "nonce",
+        "type": "core::felt252"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "stela::snip12::RefinanceOffer",
+    "members": [
+      {
+        "name": "inscription_id",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "new_lender",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "name": "new_debt_hash",
+        "type": "core::felt252"
+      },
+      {
+        "name": "new_interest_hash",
+        "type": "core::felt252"
+      },
+      {
+        "name": "new_debt_count",
+        "type": "core::integer::u32"
+      },
+      {
+        "name": "new_interest_count",
+        "type": "core::integer::u32"
+      },
+      {
+        "name": "new_duration",
+        "type": "core::integer::u64"
+      },
+      {
+        "name": "deadline",
+        "type": "core::integer::u64"
+      },
+      {
+        "name": "nonce",
+        "type": "core::felt252"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "stela::snip12::RefinanceApproval",
+    "members": [
+      {
+        "name": "inscription_id",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "offer_hash",
+        "type": "core::felt252"
+      },
+      {
+        "name": "borrower",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "name": "nonce",
+        "type": "core::felt252"
       }
     ]
   },
@@ -841,6 +1045,206 @@
         ],
         "outputs": [],
         "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "settle_collection",
+        "inputs": [
+          {
+            "name": "offer",
+            "type": "stela::snip12::CollectionLendOffer"
+          },
+          {
+            "name": "acceptance",
+            "type": "stela::snip12::CollectionBorrowAcceptance"
+          },
+          {
+            "name": "debt_assets",
+            "type": "core::array::Array::<stela::types::asset::Asset>"
+          },
+          {
+            "name": "interest_assets",
+            "type": "core::array::Array::<stela::types::asset::Asset>"
+          },
+          {
+            "name": "lender_sig",
+            "type": "core::array::Array::<core::felt252>"
+          },
+          {
+            "name": "borrower_sig",
+            "type": "core::array::Array::<core::felt252>"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "commit_renegotiation",
+        "inputs": [
+          {
+            "name": "inscription_id",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "proposal_hash",
+            "type": "core::felt252"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "execute_renegotiation",
+        "inputs": [
+          {
+            "name": "inscription_id",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "proposal",
+            "type": "stela::snip12::RenegotiationProposal"
+          },
+          {
+            "name": "proposer_sig",
+            "type": "core::array::Array::<core::felt252>"
+          },
+          {
+            "name": "new_interest_assets",
+            "type": "core::array::Array::<stela::types::asset::Asset>"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "buy_collateral",
+        "inputs": [
+          {
+            "name": "inscription_id",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "offer",
+            "type": "stela::snip12::CollateralSaleOffer"
+          },
+          {
+            "name": "borrower_sig",
+            "type": "core::array::Array::<core::felt252>"
+          },
+          {
+            "name": "sale_price",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "refinance",
+        "inputs": [
+          {
+            "name": "offer",
+            "type": "stela::snip12::RefinanceOffer"
+          },
+          {
+            "name": "new_debt_assets",
+            "type": "core::array::Array::<stela::types::asset::Asset>"
+          },
+          {
+            "name": "new_interest_assets",
+            "type": "core::array::Array::<stela::types::asset::Asset>"
+          },
+          {
+            "name": "new_lender_sig",
+            "type": "core::array::Array::<core::felt252>"
+          },
+          {
+            "name": "approval",
+            "type": "stela::snip12::RefinanceApproval"
+          },
+          {
+            "name": "borrower_sig",
+            "type": "core::array::Array::<core::felt252>"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "start_auction",
+        "inputs": [
+          {
+            "name": "inscription_id",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "bid",
+        "inputs": [
+          {
+            "name": "inscription_id",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "claim_collateral",
+        "inputs": [
+          {
+            "name": "inscription_id",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "get_auction_price",
+        "inputs": [
+          {
+            "name": "inscription_id",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "debt_index",
+            "type": "core::integer::u32"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u256"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "get_auction_end_time",
+        "inputs": [
+          {
+            "name": "inscription_id",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u64"
+          }
+        ],
+        "state_mutability": "view"
       }
     ]
   },

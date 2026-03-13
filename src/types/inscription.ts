@@ -39,6 +39,10 @@ export interface StoredInscription {
   debt_asset_count: number
   interest_asset_count: number
   collateral_asset_count: number
+  /** Whether a Dutch auction has been started (T1-3) */
+  auction_started: boolean
+  /** Timestamp when the auction was started, 0 if no auction (T1-3) */
+  auction_start_time: bigint
 }
 
 /** Parsed inscription with computed status and ID */

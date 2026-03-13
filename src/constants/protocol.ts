@@ -21,3 +21,17 @@ export const ASSET_TYPE_NAMES: Record<number, AssetType> = {
   2: 'ERC1155',
   3: 'ERC4626',
 }
+
+// ── T1 Auction Constants ────────────────────────────────────────────────
+
+/** Grace period after loan expiry before auction can start (24h in seconds) */
+export const GRACE_PERIOD = 86400n
+
+/** Duration of the Dutch auction (24h in seconds) */
+export const AUCTION_DURATION = 86400n
+
+/** Penalty added to debt at auction start (5% in BPS) */
+export const AUCTION_PENALTY_BPS = 500n
+
+/** Minimum auction price as percentage of debt (10% floor in BPS) */
+export const AUCTION_RESERVE_BPS = 1000n

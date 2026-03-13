@@ -317,6 +317,237 @@ export class InscriptionClient {
     }
   }
 
+  // ── T1 Call Builders ─────────────────────────────────────────────────
+
+  /** T1-2: Settle a collection-wide lend offer */
+  buildSettleCollection(params: {
+    offer: {
+      lender: string
+      debtHash: string
+      interestHash: string
+      debtCount: number
+      interestCount: number
+      collectionAddress: string
+      duration: bigint
+      deadline: bigint
+      nonce: bigint
+    }
+    acceptance: {
+      offerHash: string
+      borrower: string
+      tokenId: bigint
+      nonce: bigint
+    }
+    debtAssets: Asset[]
+    interestAssets: Asset[]
+    lenderSig: string[]
+    borrowerSig: string[]
+  }): Call {
+    const calldata: string[] = [
+      // CollectionLendOffer struct (9 fields)
+      params.offer.lender,
+      params.offer.debtHash,
+      params.offer.interestHash,
+      String(params.offer.debtCount),
+      String(params.offer.interestCount),
+      params.offer.collectionAddress,
+      params.offer.duration.toString(),
+      params.offer.deadline.toString(),
+      params.offer.nonce.toString(),
+      // CollectionBorrowAcceptance struct (4 fields)
+      params.acceptance.offerHash,
+      params.acceptance.borrower,
+      ...toU256(params.acceptance.tokenId),
+      params.acceptance.nonce.toString(),
+      // debt_assets array
+      ...serializeAssets(params.debtAssets),
+      // interest_assets array
+      ...serializeAssets(params.interestAssets),
+      // lender_sig array
+      String(params.lenderSig.length),
+      ...params.lenderSig,
+      // borrower_sig array
+      String(params.borrowerSig.length),
+      ...params.borrowerSig,
+    ]
+    return { contractAddress: this.address, entrypoint: 'settle_collection', calldata }
+  }
+
+  /** T1-4: Commit a renegotiation proposal hash on-chain */
+  buildCommitRenegotiation(inscriptionId: bigint, proposalHash: string): Call {
+    return {
+      contractAddress: this.address,
+      entrypoint: 'commit_renegotiation',
+      calldata: [...toU256(inscriptionId), proposalHash],
+    }
+  }
+
+  /** T1-4: Execute a committed renegotiation proposal */
+  buildExecuteRenegotiation(params: {
+    inscriptionId: bigint
+    proposal: {
+      inscriptionId: bigint
+      proposer: string
+      newDuration: bigint
+      newInterestHash: string
+      newInterestCount: number
+      proposalDeadline: bigint
+      nonce: bigint
+    }
+    proposerSig: string[]
+    newInterestAssets: Asset[]
+  }): Call {
+    const calldata: string[] = [
+      ...toU256(params.inscriptionId),
+      // RenegotiationProposal struct (7 fields)
+      ...toU256(params.proposal.inscriptionId),
+      params.proposal.proposer,
+      params.proposal.newDuration.toString(),
+      params.proposal.newInterestHash,
+      String(params.proposal.newInterestCount),
+      params.proposal.proposalDeadline.toString(),
+      params.proposal.nonce.toString(),
+      // proposer_sig array
+      String(params.proposerSig.length),
+      ...params.proposerSig,
+      // new_interest_assets array
+      ...serializeAssets(params.newInterestAssets),
+    ]
+    return { contractAddress: this.address, entrypoint: 'execute_renegotiation', calldata }
+  }
+
+  /** T1-5: Buy collateral from a borrower's sale offer */
+  buildBuyCollateral(params: {
+    inscriptionId: bigint
+    offer: {
+      inscriptionId: bigint
+      borrower: string
+      minPrice: bigint
+      paymentToken: string
+      allowedBuyer: string
+      deadline: bigint
+      nonce: bigint
+    }
+    borrowerSig: string[]
+    salePrice: bigint
+  }): Call {
+    const calldata: string[] = [
+      ...toU256(params.inscriptionId),
+      // CollateralSaleOffer struct (7 fields)
+      ...toU256(params.offer.inscriptionId),
+      params.offer.borrower,
+      ...toU256(params.offer.minPrice),
+      params.offer.paymentToken,
+      params.offer.allowedBuyer,
+      params.offer.deadline.toString(),
+      params.offer.nonce.toString(),
+      // borrower_sig array
+      String(params.borrowerSig.length),
+      ...params.borrowerSig,
+      // sale_price
+      ...toU256(params.salePrice),
+    ]
+    return { contractAddress: this.address, entrypoint: 'buy_collateral', calldata }
+  }
+
+  /** T1-1: Refinance an existing loan with a new lender */
+  buildRefinance(params: {
+    offer: {
+      inscriptionId: bigint
+      newLender: string
+      newDebtHash: string
+      newInterestHash: string
+      newDebtCount: number
+      newInterestCount: number
+      newDuration: bigint
+      deadline: bigint
+      nonce: bigint
+    }
+    newDebtAssets: Asset[]
+    newInterestAssets: Asset[]
+    newLenderSig: string[]
+    approval: {
+      inscriptionId: bigint
+      offerHash: string
+      borrower: string
+      nonce: bigint
+    }
+    borrowerSig: string[]
+  }): Call {
+    const calldata: string[] = [
+      // RefinanceOffer struct (9 fields)
+      ...toU256(params.offer.inscriptionId),
+      params.offer.newLender,
+      params.offer.newDebtHash,
+      params.offer.newInterestHash,
+      String(params.offer.newDebtCount),
+      String(params.offer.newInterestCount),
+      params.offer.newDuration.toString(),
+      params.offer.deadline.toString(),
+      params.offer.nonce.toString(),
+      // new_debt_assets array
+      ...serializeAssets(params.newDebtAssets),
+      // new_interest_assets array
+      ...serializeAssets(params.newInterestAssets),
+      // new_lender_sig array
+      String(params.newLenderSig.length),
+      ...params.newLenderSig,
+      // RefinanceApproval struct (4 fields)
+      ...toU256(params.approval.inscriptionId),
+      params.approval.offerHash,
+      params.approval.borrower,
+      params.approval.nonce.toString(),
+      // borrower_sig array
+      String(params.borrowerSig.length),
+      ...params.borrowerSig,
+    ]
+    return { contractAddress: this.address, entrypoint: 'refinance', calldata }
+  }
+
+  /** T1-3: Start a Dutch auction on an expired, unfilled inscription */
+  buildStartAuction(inscriptionId: bigint): Call {
+    return {
+      contractAddress: this.address,
+      entrypoint: 'start_auction',
+      calldata: [...toU256(inscriptionId)],
+    }
+  }
+
+  /** T1-3: Bid on an active Dutch auction */
+  buildBid(inscriptionId: bigint): Call {
+    return {
+      contractAddress: this.address,
+      entrypoint: 'bid',
+      calldata: [...toU256(inscriptionId)],
+    }
+  }
+
+  /** T1-3: Claim collateral after an auction expires with no bids */
+  buildClaimCollateral(inscriptionId: bigint): Call {
+    return {
+      contractAddress: this.address,
+      entrypoint: 'claim_collateral',
+      calldata: [...toU256(inscriptionId)],
+    }
+  }
+
+  // ── T1 Read Methods ──────────────────────────────────────────────────
+
+  /** T1-3: Get the current Dutch auction price for a specific debt asset */
+  async getAuctionPrice(inscriptionId: bigint, debtIndex: number): Promise<bigint> {
+    const result = await this.contract.call('get_auction_price', [
+      ...toU256(inscriptionId),
+      String(debtIndex),
+    ])
+    return extractU256(result)
+  }
+
+  /** T1-3: Get the auction end timestamp */
+  async getAuctionEndTime(inscriptionId: bigint): Promise<bigint> {
+    const result = await this.contract.call('get_auction_end_time', toU256(inscriptionId))
+    return BigInt(String((result as unknown[])[0] ?? '0'))
+  }
+
   // ── Execute Methods ────────────────────────────────────────────────
 
   /**
@@ -368,6 +599,44 @@ export class InscriptionClient {
   async cancelOrdersByNonce(minNonce: string): Promise<{ transaction_hash: string }> {
     return this.execute([this.buildCancelOrdersByNonce(minNonce)])
   }
+
+  // ── T1 Execute Methods ───────────────────────────────────────────────
+
+  async settleCollection(params: Parameters<InscriptionClient['buildSettleCollection']>[0]): Promise<{ transaction_hash: string }> {
+    return this.execute([this.buildSettleCollection(params)])
+  }
+
+  async commitRenegotiation(inscriptionId: bigint, proposalHash: string): Promise<{ transaction_hash: string }> {
+    return this.execute([this.buildCommitRenegotiation(inscriptionId, proposalHash)])
+  }
+
+  async executeRenegotiation(params: Parameters<InscriptionClient['buildExecuteRenegotiation']>[0], approvals?: Call[]): Promise<{ transaction_hash: string }> {
+    const calls = [...(approvals ?? []), this.buildExecuteRenegotiation(params)]
+    return this.execute(calls)
+  }
+
+  async buyCollateral(params: Parameters<InscriptionClient['buildBuyCollateral']>[0], approvals?: Call[]): Promise<{ transaction_hash: string }> {
+    const calls = [...(approvals ?? []), this.buildBuyCollateral(params)]
+    return this.execute(calls)
+  }
+
+  async refinance(params: Parameters<InscriptionClient['buildRefinance']>[0], approvals?: Call[]): Promise<{ transaction_hash: string }> {
+    const calls = [...(approvals ?? []), this.buildRefinance(params)]
+    return this.execute(calls)
+  }
+
+  async startAuction(inscriptionId: bigint): Promise<{ transaction_hash: string }> {
+    return this.execute([this.buildStartAuction(inscriptionId)])
+  }
+
+  async bid(inscriptionId: bigint, approvals?: Call[]): Promise<{ transaction_hash: string }> {
+    const calls = [...(approvals ?? []), this.buildBid(inscriptionId)]
+    return this.execute(calls)
+  }
+
+  async claimCollateral(inscriptionId: bigint): Promise<{ transaction_hash: string }> {
+    return this.execute([this.buildClaimCollateral(inscriptionId)])
+  }
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -415,6 +684,8 @@ function parseStoredInscription(result: unknown): StoredInscription {
     debt_asset_count: Number(get('debt_asset_count', 9)),
     interest_asset_count: Number(get('interest_asset_count', 10)),
     collateral_asset_count: Number(get('collateral_asset_count', 11)),
+    auction_started: Boolean(get('auction_started', 12)),
+    auction_start_time: BigInt(String(get('auction_start_time', 13) ?? '0')),
   }
 }
 

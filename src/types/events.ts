@@ -119,6 +119,26 @@ export interface OrdersBulkCancelledEvent {
   block_number: number
 }
 
+/** AuctionStarted event (emitted by start_auction()) — T1-3 */
+export interface AuctionStartedEvent {
+  type: 'AuctionStarted'
+  inscription_id: bigint
+  starter: string
+  auction_end_time: bigint
+  transaction_hash: string
+  block_number: number
+}
+
+/** AuctionBid event (emitted by bid()) — T1-3 */
+export interface AuctionBidEvent {
+  type: 'AuctionBid'
+  inscription_id: bigint
+  bidder: string
+  price: bigint
+  transaction_hash: string
+  block_number: number
+}
+
 /** Discriminated union of all Stela protocol events */
 export type StelaEvent =
   | InscriptionCreatedEvent
@@ -132,3 +152,5 @@ export type StelaEvent =
   | OrderFilledEvent
   | OrderCancelledEvent
   | OrdersBulkCancelledEvent
+  | AuctionStartedEvent
+  | AuctionBidEvent
