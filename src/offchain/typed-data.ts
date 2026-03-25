@@ -11,6 +11,37 @@ const STELA_DOMAIN = {
 }
 
 /**
+ * Build SNIP-12 typed data for an order cancellation.
+ *
+ * The borrower signs this to prove they want to cancel their order.
+ * Both client and server must produce the same typed data to agree
+ * on the message hash that gets verified via is_valid_signature.
+ */
+export function getCancelOrderTypedData(orderId: string, chainId: string): TypedData {
+  return {
+    types: {
+      StarknetDomain: [
+        { name: 'name', type: 'shortstring' },
+        { name: 'version', type: 'shortstring' },
+        { name: 'chainId', type: 'shortstring' },
+        { name: 'revision', type: 'shortstring' },
+      ],
+      CancelOrder: [
+        { name: 'order_id', type: 'string' },
+      ],
+    },
+    primaryType: 'CancelOrder',
+    domain: {
+      ...STELA_DOMAIN,
+      chainId,
+    },
+    message: {
+      order_id: orderId,
+    },
+  }
+}
+
+/**
  * Build SNIP-12 TypedData for a borrower's InscriptionOrder.
  * The borrower signs this off-chain to create an order without gas.
  */

@@ -16,6 +16,20 @@ export type {
   TreasuryAsset,
   ShareBalance,
   LockerInfo,
+  InscriptionDetailResponse,
+  CollectionOfferRow,
+  RefinanceRow,
+  RenegotiationRow,
+  CollateralSaleRow,
+  OrderStatus,
+  OrderRow,
+  OrderOfferRow,
+  ShareListingRow,
+  LendingLevel,
+  SwapLevel,
+  TokenDisplay,
+  OrderBookResponse,
+  DurationFilter,
   RawEvent,
   InscriptionCreatedEvent,
   InscriptionSignedEvent,
@@ -35,7 +49,7 @@ export type {
   LockerCall,
 } from './types/index.js'
 
-export { VALID_STATUSES, STATUS_LABELS } from './types/index.js'
+export { VALID_STATUSES, STATUS_LABELS, DURATION_RANGES } from './types/index.js'
 
 // ── Constants ─────────────────────────────────────────────────────────
 export {
@@ -51,7 +65,13 @@ export {
   AUCTION_DURATION,
   AUCTION_PENALTY_BPS,
   AUCTION_RESERVE_BPS,
+  SWAP_DEADLINE_PRESETS,
+  LEND_DEADLINE_PRESETS,
+  DURATION_PRESETS,
+  formatDurationHuman,
 } from './constants/index.js'
+
+export type { DeadlinePreset, DurationPreset } from './constants/index.js'
 
 // ── Utilities ─────────────────────────────────────────────────────────
 export {
@@ -67,9 +87,37 @@ export {
   formatDuration,
   formatTimestamp,
   computeStatus,
+  enrichStatus,
+  getStatusBadgeVariant,
+  getStatusLabel,
+  getOrderStatusBadgeVariant,
+  getOrderStatusLabel,
+  inscriptionMatchesGroup,
+  orderMatchesGroup,
+  ORDER_STATUS_LABELS,
+  INSCRIPTION_STATUS_GROUPS,
+  ORDER_STATUS_GROUPS,
+  STATUS_DESCRIPTIONS,
+  CONCEPT_DESCRIPTIONS,
+  normalizeOrderData,
+  parseOrderRow,
+  formatSig,
+  parseSigToArray,
+  serializeAssetCalldata,
+  parseAssetArray,
+  parseInscriptionCalldata,
+  serializeSignatureCalldata,
 } from './utils/index.js'
 
-export type { StatusInput } from './utils/index.js'
+export type {
+  StatusInput,
+  EnrichedStatus,
+  StatusBadgeVariant,
+  SerializedAsset,
+  RawOrderData,
+  ParsedOrderData,
+  StoredAsset,
+} from './utils/index.js'
 
 // ── Tokens ────────────────────────────────────────────────────────────
 export type { TokenInfo } from './tokens/index.js'
@@ -89,6 +137,7 @@ export {
   accruedInterestWithBuffer,
   computeSafePositionFloor,
   DEFAULT_DUST_BUFFER_SECONDS,
+  computeInterestRate,
 } from './math/index.js'
 
 export type {
@@ -113,6 +162,7 @@ export {
   getRefinanceOfferTypedData,
   getRefinanceApprovalTypedData,
   getTermsAcknowledgmentTypedData,
+  getCancelOrderTypedData,
   hashAssets,
   hashBatchEntries,
   serializeSignature,
@@ -129,6 +179,7 @@ export {
   ApiClient,
   ApiError,
   StelaSdk,
+  getNonce,
 } from './client/index.js'
 
 export type {

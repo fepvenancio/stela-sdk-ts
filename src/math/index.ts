@@ -21,3 +21,5 @@ export type {
   AccruedInterestEntry,
   PositionValue,
 } from './position.js'
+
+export { computeInterestRate } from './rate.js'

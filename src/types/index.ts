@@ -26,7 +26,26 @@ export type {
   TreasuryAsset,
   ShareBalance,
   LockerInfo,
+  InscriptionDetailResponse,
+  CollectionOfferRow,
+  RefinanceRow,
+  RenegotiationRow,
+  CollateralSaleRow,
+  OrderStatus,
+  OrderRow,
+  OrderOfferRow,
+  ShareListingRow,
 } from './api.js'
+
+export type {
+  LendingLevel,
+  SwapLevel,
+  TokenDisplay,
+  OrderBookResponse,
+  DurationFilter,
+} from './orderbook.js'
+
+export { DURATION_RANGES } from './orderbook.js'
 
 export type {
   RawEvent,
